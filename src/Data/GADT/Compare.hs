@@ -1,31 +1,49 @@
-{-# LANGUAGE GADTs, TypeOperators, RankNTypes, TypeFamilies, FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE Safe #-}
+{-# LANGUAGE CPP                 #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-deprecated-flags #-}
-module Data.GADT.Compare
-    ( module Data.GADT.Compare
-    , (:~:)(Refl)
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
+#if __GLASGOW_HASKELL__ >= 706
+{-# LANGUAGE PolyKinds           #-}
+#endif
+#if __GLASGOW_HASKELL__ >= 702
+#define GHC __GLASGOW_HASKELL__
+#if (GHC >= 704 && GHC <707) || GHC >= 801
+{-# LANGUAGE Safe                #-}
+#else
+{-# LANGUAGE Trustworthy         #-}
+#endif
+#undef GH
+#endif
+module Data.GADT.Compare (
+    -- * Equality
+    GEq (..),
+    defaultEq,
+    defaultNeq,
+    -- * Total order comparison
+    GCompare (..),
+    defaultCompare,
     ) where
 
-import Data.Maybe
-import Data.GADT.Show
-import Data.Type.Equality ((:~:) (..))
-import Data.Typeable
-import Data.Functor.Sum (Sum (..))
 import Data.Functor.Product (Product (..))
+import Data.Functor.Sum     (Sum (..))
+import Data.GADT.Show
+import Data.Maybe           (isJust, isNothing)
+import Data.Type.Equality   ((:~:) (..))
 
-#if MIN_VERSION_base(4,10,0)
-import qualified Type.Reflection as TR
-import Data.Type.Equality (testEquality)
+#if __GLASGOW_HASKELL__ >=708
+import Data.Typeable        (Typeable)
 #endif
 
--- |Backwards compatibility alias; as of GHC 7.8, this is the same as `(:~:)`.
-{-# DEPRECATED (:=) "use '(:~:)' from 'Data.Type,Equality'." #-}
-type (:=) = (:~:)
+#if MIN_VERSION_base(4,10,0)
+import           Data.Type.Equality (testEquality)
+import qualified Type.Reflection    as TR
+#endif
+
 
 -- |A class for type-contexts which contain enough information
 -- to (at least in some cases) decide the equality of types
@@ -110,7 +128,9 @@ data GOrdering a b where
     GLT :: GOrdering a b
     GEQ :: GOrdering t t
     GGT :: GOrdering a b
-    deriving Typeable
+#if __GLASGOW_HASKELL__ >=708
+  deriving Typeable
+#endif
 
 -- |TODO: Think of a better name
 --
@@ -121,8 +141,7 @@ weakenOrdering GEQ = EQ
 weakenOrdering GGT = GT
 
 instance Eq (GOrdering a b) where
-    x == y =
-        weakenOrdering x == weakenOrdering y
+    x == y = weakenOrdering x == weakenOrdering y
 
 instance Ord (GOrdering a b) where
     compare x y = compare (weakenOrdering x) (weakenOrdering y)

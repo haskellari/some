@@ -1,2 +1,5 @@
-packages: dependent-sum
-        , dependent-sum-template
+packages: .
+
+package some
+  ghc-options: -Wall
+  -- flags: -newtype-unsafe

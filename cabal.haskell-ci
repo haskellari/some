@@ -1,0 +1,7 @@
+branches : master
+
+constraint-set safe
+  constraints: some -newtype-unsafe
+
+constraint-set unsafe
+  constraints: some +newtype-unsafe
