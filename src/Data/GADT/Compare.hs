@@ -27,6 +27,7 @@ module Data.GADT.Compare (
     -- * Total order comparison
     GCompare (..),
     defaultCompare,
+    GOrdering (..),
     ) where
 
 import Data.Functor.Product (Product (..))
