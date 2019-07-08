@@ -1,10 +1,20 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE Safe #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE CPP                 #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+#if __GLASGOW_HASKELL__ >= 706
+{-# LANGUAGE PolyKinds           #-}
+#endif
+#if __GLASGOW_HASKELL__ >= 704
+#define GHC __GLASGOW_HASKELL__
+#if (GHC >= 704 && GHC <707) || GHC >= 801
+{-# LANGUAGE Safe                #-}
+#else
+{-# LANGUAGE Trustworthy         #-}
+#endif
+#undef GH
+#endif
 module Data.GADT.Show where
 
 import Data.Functor.Sum (Sum (..))
