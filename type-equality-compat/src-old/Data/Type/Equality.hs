@@ -27,6 +27,10 @@ module Data.Type.Equality (
     castWith,
     gcastWith,
 
+#if __GLASGOW_HASKELL__ >= 706
+    apply,
+#endif
+
     -- * TestEquality
     -- 
     -- | Provided only for GHC-7.6.
@@ -34,6 +38,8 @@ module Data.Type.Equality (
     -- which are available only since GHC-7.8.
     TestEquality (..),
     ) where
+
+import qualified Control.Category as C
 
 -- | Propositional equality. If @a ':~:' b@ is inhabited by some
 -- terminating value, then the type @a@ is the same as the type
@@ -48,6 +54,10 @@ data a :~: b where
 
 deriving instance a ~ b => Read (a :~: b)
 deriving instance Show (a :~: b)
+
+instance C.Category (:~:) where
+    id = Refl
+    Refl . Refl = Refl
 
 instance Eq (a :~: b) where
     _ == _ = True
@@ -84,6 +94,12 @@ castWith Refl x = x
 -- | Generalized form of type-safe cast using propositional equality
 gcastWith :: (a :~: b) -> ((a ~ b) => r) -> r
 gcastWith Refl x = x
+
+#if __GLASGOW_HASKELL__ >= 706
+-- | Apply one equality to another, respectively
+apply :: (f :~: g) -> (a :~: b) -> (f a :~: g b)
+apply Refl Refl = Refl
+#endif
 
 -------------------------------------------------------------------------------
 -- TestEquality
