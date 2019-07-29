@@ -12,11 +12,8 @@
 {-# LANGUAGE PolyKinds           #-}
 #endif
 #if __GLASGOW_HASKELL__ >= 702
-#if __GLASGOW_HASKELL__ >= 704
-{-# LANGUAGE Safe                #-}
-#else
+-- only Trustworthy, as we have manual Typeable instance
 {-# LANGUAGE Trustworthy         #-}
-#endif
 #endif
 module Data.Type.Equality (
     -- * Type equality
@@ -40,6 +37,19 @@ module Data.Type.Equality (
     ) where
 
 import qualified Control.Category as C
+import Data.Typeable (Typeable2 (..), Typeable)
+import Data.Data (Data (..), Constr, mkConstr, Fixity(Prefix), DataType, mkDataType, mkTyConApp, TyCon )
+
+#if MIN_VERSION_base(4,4,0)
+import Data.Data (mkTyCon3)
+#else
+import Data.Data (mkTyCon)
+#endif
+
+#ifndef CURRENT_PACKAGE_KEY
+import Data.Version (showVersion)
+import Paths_type_equality_compat (version)
+#endif
 
 -- | Propositional equality. If @a ':~:' b@ is inhabited by some
 -- terminating value, then the type @a@ is the same as the type
@@ -74,6 +84,40 @@ instance a ~ b => Enum (a :~: b) where
 instance a ~ b => Bounded (a :~: b) where
     minBound = Refl
     maxBound = Refl
+
+-------------------------------------------------------------------------------
+-- Typeable & Data
+-------------------------------------------------------------------------------
+
+instance Typeable2 (:~:) where
+  typeOf2 t = mkTyConApp eqTyCon []
+
+
+typeEqualityCompatPackageKey :: String
+#ifdef CURRENT_PACKAGE_KEY
+typeEqualityCompatPackageKey = CURRENT_PACKAGE_KEY
+#else
+typeEqualityCompatPackageKey = "type-equality-compat-" ++ showVersion version
+#endif
+
+eqTyCon :: TyCon
+#if MIN_VERSION_base(4,4,0)
+eqTyCon = mkTyCon3 typeEqualityCompatPackageKey "Data.Type.Equality" ":~:"
+#else
+eqTyCon = mkTyCon "Data.Type.Equality.:~:"
+#endif
+
+instance (Typeable a, Typeable b, a ~ b) => Data (a :~: b) where
+  gfoldl _ z Refl = z Refl
+  gunfold _ z _ = z Refl
+  toConstr Refl = reflConstr
+  dataTypeOf _ = eqDataType
+
+eqDataType :: DataType
+eqDataType = mkDataType ":~:" [reflConstr]
+
+reflConstr :: Constr
+reflConstr = mkConstr eqDataType "Refl" [] Prefix
 
 -------------------------------------------------------------------------------
 -- Combinators
