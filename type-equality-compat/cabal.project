@@ -1,0 +1,4 @@
+packages: .
+
+package type-equality-compat
+  ghc-options: -Wall

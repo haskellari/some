@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP                 #-}
-#if __GLASGOW_HASKELL_ >=708
+#if __GLASGOW_HASKELL__ >= 708
 #error "Trying to compiled Data.Type.Equality module with GHC-7.8+"
 #endif
 {-# LANGUAGE GADTs               #-}
@@ -27,6 +27,12 @@ module Data.Type.Equality (
 #if __GLASGOW_HASKELL__ >= 706
     apply,
 #endif
+
+    -- inner and outer not implemented,
+    -- as GHC-7.6 fails to infer them:
+    --    Could not deduce (f ~ g) from the context (f a ~ g b)
+
+    -- There are no (==) as it needs ClosedTypeFamilies (since GHC-7.8)
 
     -- * TestEquality
     -- 
@@ -90,8 +96,7 @@ instance a ~ b => Bounded (a :~: b) where
 -------------------------------------------------------------------------------
 
 instance Typeable2 (:~:) where
-  typeOf2 t = mkTyConApp eqTyCon []
-
+    typeOf2 _ = mkTyConApp eqTyCon []
 
 typeEqualityCompatPackageKey :: String
 #ifdef CURRENT_PACKAGE_KEY
@@ -108,10 +113,10 @@ eqTyCon = mkTyCon "Data.Type.Equality.:~:"
 #endif
 
 instance (Typeable a, Typeable b, a ~ b) => Data (a :~: b) where
-  gfoldl _ z Refl = z Refl
-  gunfold _ z _ = z Refl
-  toConstr Refl = reflConstr
-  dataTypeOf _ = eqDataType
+    gfoldl _ z Refl = z Refl
+    gunfold _ z _ = z Refl
+    toConstr Refl = reflConstr
+    dataTypeOf _ = eqDataType
 
 eqDataType :: DataType
 eqDataType = mkDataType ":~:" [reflConstr]
