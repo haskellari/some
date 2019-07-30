@@ -17,7 +17,6 @@ description:
   data Some f where
   \    Some :: f a -> Some f
   @
-  .
 
 tested-with:
   GHC ==8.8.1 || ==8.6.5 || ==8.4.4 || ==8.2.2 || ==8.0.2 || ==7.10.3 || ==7.8.4 || ==7.6.3 || ==7.4.2 || ==7.2.2 || ==7.0.4
@@ -34,6 +33,7 @@ flag newtype-unsafe
 source-repository head
   type:     git
   location: git://github.com/phadej/some.git
+  subdir:   some
 
 library
   default-language: Haskell2010
@@ -46,8 +46,7 @@ library
     hs-source-dirs: src-safe
 
   if !impl(ghc >=7.8)
-    hs-source-dirs:  src-old
-    exposed-modules: Data.Type.Equality
+    build-depends: type-equality-compat >= 1 && <1.1
 
   exposed-modules:
     Data.GADT.Compare

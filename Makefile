@@ -1,7 +1,7 @@
 doctest : doctest-safe doctest-unsafe
 
 doctest-safe :
-	doctest src src-safe
+	doctest some/src some/src-safe
 
 doctest-unsafe :
-	doctest src src-unsafe
+	doctest some/src some/src-unsafe
