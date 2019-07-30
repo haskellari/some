@@ -27,6 +27,10 @@ module Data.Type.Equality (
 #if __GLASGOW_HASKELL__ >= 706
     apply,
 #endif
+    inner,
+#if __GLASGOW_HASKELL__ >= 706
+    outer,
+#endif
 
     -- inner and outer not implemented,
     -- as GHC-7.6 fails to infer them:
@@ -35,7 +39,7 @@ module Data.Type.Equality (
     -- There are no (==) as it needs ClosedTypeFamilies (since GHC-7.8)
 
     -- * TestEquality
-    -- 
+    --
     -- | Provided only for GHC-7.6.
     -- Also there isn't @==@ type family, as it requires close type families,
     -- which are available only since GHC-7.8.
@@ -44,7 +48,7 @@ module Data.Type.Equality (
 
 import qualified Control.Category as C
 import Data.Typeable (Typeable2 (..), Typeable)
-import Data.Data (Data (..), Constr, mkConstr, Fixity(Prefix), DataType, mkDataType, mkTyConApp, TyCon )
+import Data.Data (Data (..), Constr, mkConstr, Fixity(Prefix), DataType, mkDataType, mkTyConApp, TyCon)
 
 #if MIN_VERSION_base(4,4,0)
 import Data.Data (mkTyCon3)
@@ -150,6 +154,16 @@ apply :: (f :~: g) -> (a :~: b) -> (f a :~: g b)
 apply Refl Refl = Refl
 #endif
 
+-- | Extract equality of the arguments from an equality of applied types
+inner :: f a :~: g b -> a :~: b
+inner = fromLeibniz . innerLeibniz . toLeibniz
+
+#if __GLASGOW_HASKELL__ >= 706
+-- | Extract equality of type constructors from an equality of applied types
+outer :: f a :~: g b -> f :~: g
+outer = fromLeibniz . outerLeibniz . toLeibniz
+#endif
+
 -------------------------------------------------------------------------------
 -- TestEquality
 -------------------------------------------------------------------------------
@@ -163,3 +177,40 @@ class TestEquality f where
 
 instance TestEquality ((:~:) a) where
   testEquality Refl Refl = Just Refl
+
+-------------------------------------------------------------------------------
+-- Leibniz
+-------------------------------------------------------------------------------
+
+newtype a := b = ReflLeibniz { subst :: forall c. c a -> c b }
+
+reflLeibniz :: a := a
+reflLeibniz = ReflLeibniz id
+
+#if __GLASGOW_HASKELL__ >= 706
+type family Inj (f :: j -> k) (a :: k) :: j
+#else
+type family Inj (f :: * -> *) (a :: *) :: *
+#endif
+type instance Inj f (g a) = a
+
+newtype Lower f a b = Lower { unlower :: Inj f a := Inj f b }
+
+fromLeibniz :: a := b -> a :~: b
+fromLeibniz a = subst a Refl
+
+toLeibniz :: a :~: b -> a := b
+toLeibniz Refl = reflLeibniz
+
+innerLeibniz :: f a := g b -> a := b
+innerLeibniz eq = unlower (subst eq (Lower reflLeibniz :: Lower f (f a) (f a)))
+
+#if __GLASGOW_HASKELL__ >= 706
+type family Gen (f :: j -> k) (a :: k) :: j -> k
+type instance Gen f (g a) = g
+
+newtype Generate f a b = Generate { ungenerate :: Gen f a := Gen f b }
+
+outerLeibniz :: f a := g b -> f := g
+outerLeibniz eq = ungenerate (subst eq (Generate reflLeibniz :: Generate f (f a) (f a)))
+#endif

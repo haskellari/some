@@ -3,7 +3,7 @@ version:       1
 stability:     provisional
 cabal-version: >=1.10
 build-type:    Simple
-author:        Oleg Grenrus <oleg.grenrus@iki.fi>
+author:        Oleg Grenrus <oleg.grenrus@iki.fi>, Ryan Scott <ryan.gl.scott@gmail.com>
 maintainer:    Oleg Grenrus <oleg.grenrus@iki.fi>
 license:       BSD3
 license-file:  LICENSE
@@ -38,7 +38,7 @@ library
     hs-source-dirs: src-old
     exposed-modules:  Data.Type.Equality
 
-  if impl(ghc >=8.0 && <8.2)
+  if impl(ghc >=8.0)
     hs-source-dirs:   src-hetero
     exposed-modules:  Data.Type.Equality.Hetero
     other-extensions: PolyKinds

@@ -38,6 +38,8 @@ import Data.Type.Coercion (TestCoercion (..), Coercion (..))
 data (a :: k1) :~~: (b :: k2) where
    HRefl :: a :~~: a
 
+infixr 4 :~~:
+
 deriving instance Eq   (a :~~: b)
 deriving instance Show (a :~~: b)
 deriving instance Ord  (a :~~: b)
