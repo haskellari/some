@@ -72,18 +72,14 @@ import Paths_type_equality_compat (version)
 data a :~: b where
     Refl :: a :~: a
 
+deriving instance Eq (a :~: b)
+deriving instance Ord (a :~: b)
 deriving instance a ~ b => Read (a :~: b)
 deriving instance Show (a :~: b)
 
 instance C.Category (:~:) where
     id = Refl
     Refl . Refl = Refl
-
-instance Eq (a :~: b) where
-    _ == _ = True
-
-instance Ord (a :~: b) where
-    compare _ _ = EQ
 
 instance a ~ b => Enum (a :~: b) where
     toEnum 0 = Refl
