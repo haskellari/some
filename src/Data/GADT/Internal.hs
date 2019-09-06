@@ -18,9 +18,12 @@
 #endif
 module Data.GADT.Internal where
 
+import Control.Applicative  (Applicative (..))
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum     (Sum (..))
 import Data.Maybe           (isJust, isNothing)
+import Data.Monoid          (Monoid (..))
+import Data.Semigroup       (Semigroup (..))
 import Data.Type.Equality   ((:~:) (..))
 
 #if __GLASGOW_HASKELL__ >=708
@@ -380,3 +383,13 @@ instance GCompare tag => Ord (Some tag) where
     compare x y =
         withSome x $ \x' ->
         withSome y $ \y' -> defaultCompare x' y'
+
+instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) where
+    m <> n =
+        withSome m $ \m' ->
+        withSome n $ \n' ->
+        mkSome (m' *> n')
+
+instance Applicative m => Data.Monoid.Monoid (Some m) where
+    mempty = mkSome (pure ())
+    mappend = (<>)

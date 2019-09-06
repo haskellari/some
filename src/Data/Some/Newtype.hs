@@ -22,10 +22,14 @@ module Data.Some.Newtype (
     mapSome,
     ) where
 
+import Control.Applicative (Applicative (..))
+import Data.Monoid         (Monoid (..))
+import Data.Semigroup      (Semigroup (..))
+import GHC.Exts            (Any)
+import Unsafe.Coerce       (unsafeCoerce)
+
 import Data.GADT.Compare
 import Data.GADT.Show
-import GHC.Exts          (Any)
-import Unsafe.Coerce     (unsafeCoerce)
 
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs
@@ -89,6 +93,9 @@ mkSome = UnsafeSome . unsafeCoerce
 withSome :: Some tag -> (forall a. tag a -> b) -> b
 withSome (UnsafeSome thing) some = some (unsafeCoerce thing)
 
+mapSome :: (forall t. f t -> g t) -> Some f -> Some g
+mapSome f (UnsafeSome x) = UnsafeSome (unsafeCoerce f x)
+
 instance GShow tag => Show (Some tag) where
     showsPrec p some = withSome some $ \thing -> showParen (p > 10)
         ( showString "Some "
@@ -113,5 +120,12 @@ instance GCompare tag => Ord (Some tag) where
         withSome x $ \x' ->
         withSome y $ \y' -> defaultCompare x' y'
 
-mapSome :: (forall t. f t -> g t) -> Some f -> Some g
-mapSome f (UnsafeSome x) = UnsafeSome (unsafeCoerce f x)
+instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) where
+    m <> n =
+        withSome m $ \m' ->
+        withSome n $ \n' ->
+        mkSome (m' *> n')
+
+instance Applicative m => Data.Monoid.Monoid (Some m) where
+    mempty = mkSome (pure ())
+    mappend = (<>)

@@ -16,6 +16,10 @@ module Data.Some.GADT (
     mapSome,
     ) where
 
+import Control.Applicative (Applicative (..))
+import Data.Semigroup (Semigroup (..))
+import Data.Monoid (Monoid (..))
+
 import Data.GADT.Compare
 import Data.GADT.Show
 
@@ -98,3 +102,10 @@ instance GEq tag => Eq (Some tag) where
 
 instance GCompare tag => Ord (Some tag) where
     compare (Some x) (Some y) = defaultCompare x y
+
+instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) where
+    Some m <> Some n = Some (m *> n)
+
+instance Applicative m => Data.Monoid.Monoid (Some m) where
+    mempty = Some (pure ())
+    mappend = (<>)

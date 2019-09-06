@@ -63,11 +63,11 @@ library
     Data.Some.GADT
     Data.Some.Newtype
 
-  other-modules: Data.GADT.Internal
-
+  other-modules:    Data.GADT.Internal
   build-depends:    base >=4.3 && <4.14
 
   if !impl(ghc >=8.0)
     build-depends:
-        transformers         >=0.3 && <0.6
-      , transformers-compat  >=0.6 && <0.7
+        semigroups           >=0.18.5 && <0.20
+      , transformers         >=0.3    && <0.6
+      , transformers-compat  >=0.6    && <0.7
