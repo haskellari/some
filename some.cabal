@@ -19,7 +19,17 @@ description:
   @
 
 tested-with:
-  GHC ==8.8.1 || ==8.6.5 || ==8.4.4 || ==8.2.2 || ==8.0.2 || ==7.10.3 || ==7.8.4 || ==7.6.3 || ==7.4.2 || ==7.2.2 || ==7.0.4
+  GHC ==7.0.4
+   || ==7.2.2
+   || ==7.4.2
+   || ==7.6.3
+   || ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.1
 
 extra-source-files: ChangeLog.md
 
@@ -43,12 +53,13 @@ library
     cpp-options: -DSOME_NEWTYPE
 
   if !impl(ghc >=7.8)
-    build-depends: type-equality >= 1 && <1.1
+    build-depends: type-equality >=1 && <1.1
 
   exposed-modules:
     Data.GADT.Compare
     Data.GADT.Show
     Data.Some
+    Data.Some.Church
     Data.Some.GADT
     Data.Some.Newtype
 
