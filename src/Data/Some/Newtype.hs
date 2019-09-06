@@ -1,16 +1,22 @@
-{-# LANGUAGE CPP          #-}
-{-# LANGUAGE GADTs        #-}
-{-# LANGUAGE RankNTypes   #-}
+{-# LANGUAGE CPP             #-}
+{-# LANGUAGE GADTs           #-}
+{-# LANGUAGE RankNTypes      #-}
+#if __GLASGOW_HASKELL__ >= 801
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE ViewPatterns    #-}
+#endif
 #if __GLASGOW_HASKELL__ >= 706
-{-# LANGUAGE PolyKinds    #-}
+{-# LANGUAGE PolyKinds       #-}
 #endif
-#if __GLASGOW_HASKELL__ >= 704
-{-# LANGUAGE Safe         #-}
-#elif __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy  #-}
+#if __GLASGOW_HASKELL__ >= 702
+{-# LANGUAGE Trustworthy     #-}
 #endif
-module Data.Some (
+module Data.Some.Newtype (
+#if __GLASGOW_HASKELL__ >= 801
     Some(Some),
+#else
+    Some,
+#endif
     mkSome,
     withSome,
     mapSome,
@@ -18,6 +24,8 @@ module Data.Some (
 
 import Data.GADT.Compare
 import Data.GADT.Show
+import GHC.Exts          (Any)
+import Unsafe.Coerce     (unsafeCoerce)
 
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs
@@ -27,7 +35,7 @@ import Data.GADT.Show
 -- >>> data Tag :: * -> * where TagInt :: Tag Int; TagBool :: Tag Bool
 -- >>> instance GShow Tag where gshowsPrec _ TagInt = showString "TagInt"; gshowsPrec _ TagBool = showString "TagBool"
 --
--- You can either use constructor:
+-- You can either use @PatternSynonyms@ (available with GHC >= 8.0)
 --
 -- >>> let x = Some TagInt
 -- >>> x
@@ -56,36 +64,46 @@ import Data.GADT.Show
 -- >>> withSome y (mkSome . f)
 -- Some TagBool
 --
-data Some tag where
-    Some :: tag a -> Some tag
+newtype Some tag = UnsafeSome (tag Any)
+
+#if __GLASGOW_HASKELL__ >= 801
+{-# COMPLETE Some #-}
+pattern Some :: tag a -> Some tag
+pattern Some x <- UnsafeSome ((unsafeCoerce :: tag Any -> tag a) -> x)
+  where Some x = UnsafeSome ((unsafeCoerce :: tag a -> tag Any) x)
+#endif
 
 -- | Constructor.
 mkSome :: tag a -> Some tag
-mkSome = Some
+mkSome = UnsafeSome . unsafeCoerce
 
 -- | Eliminator.
 withSome :: Some tag -> (forall a. tag a -> b) -> b
-withSome (Some thing) some = some thing
-
--- | Map over argument.
-mapSome :: (forall x. f x -> g x) ->  Some f -> Some g
-mapSome nt (Some fx) = Some (nt fx)
+withSome (UnsafeSome thing) some = some (unsafeCoerce thing)
 
 instance GShow tag => Show (Some tag) where
-    showsPrec p (Some thing) = showParen (p > 10)
-        $ showString "Some "
+    showsPrec p some = withSome some $ \thing -> showParen (p > 10)
+        ( showString "Some "
         . gshowsPrec 11 thing
+        )
 
 instance GRead f => Read (Some f) where
     readsPrec p = readParen (p>10) $ \s ->
-        [ (getGReadResult withTag Some, rest')
+        [ (getGReadResult withTag mkSome, rest')
         | let (con, rest) = splitAt 5 s
         , con == "Some "
         , (withTag, rest') <- greadsPrec 11 rest
         ]
 
 instance GEq tag => Eq (Some tag) where
-    Some x == Some y = defaultEq x y
+    x == y =
+        withSome x $ \x' ->
+        withSome y $ \y' -> defaultEq x' y'
 
 instance GCompare tag => Ord (Some tag) where
-    compare (Some x) (Some y) = defaultCompare x y
+    compare x y =
+        withSome x $ \x' ->
+        withSome y $ \y' -> defaultCompare x' y'
+
+mapSome :: (forall t. f t -> g t) -> Some f -> Some g
+mapSome f (UnsafeSome x) = UnsafeSome (unsafeCoerce f x)
