@@ -1,13 +1,13 @@
-{-# LANGUAGE CPP          #-}
-{-# LANGUAGE GADTs        #-}
-{-# LANGUAGE RankNTypes   #-}
+{-# LANGUAGE CPP         #-}
+{-# LANGUAGE GADTs       #-}
+{-# LANGUAGE RankNTypes  #-}
 #if __GLASGOW_HASKELL__ >= 706
-{-# LANGUAGE PolyKinds    #-}
+{-# LANGUAGE PolyKinds   #-}
 #endif
 #if __GLASGOW_HASKELL__ >= 704
-{-# LANGUAGE Safe         #-}
+{-# LANGUAGE Safe        #-}
 #elif __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy  #-}
+{-# LANGUAGE Trustworthy #-}
 #endif
 module Data.Some.GADT (
     Some(Some),
@@ -17,10 +17,12 @@ module Data.Some.GADT (
     ) where
 
 import Control.Applicative (Applicative (..))
-import Data.Semigroup (Semigroup (..))
-import Data.Monoid (Monoid (..))
+import Control.DeepSeq     (NFData (..))
+import Data.Monoid         (Monoid (..))
+import Data.Semigroup      (Semigroup (..))
 
 import Data.GADT.Compare
+import Data.GADT.DeepSeq
 import Data.GADT.Show
 
 -- $setup
@@ -88,7 +90,7 @@ instance GShow tag => Show (Some tag) where
         $ showString "Some "
         . gshowsPrec 11 thing
 
--- | 
+-- |
 instance GRead f => Read (Some f) where
     readsPrec p = readParen (p>10) $ \s ->
         [ (getGReadResult withTag Some, rest')
@@ -102,6 +104,9 @@ instance GEq tag => Eq (Some tag) where
 
 instance GCompare tag => Ord (Some tag) where
     compare (Some x) (Some y) = defaultCompare x y
+
+instance GNFData tag => NFData (Some tag) where
+    rnf (Some x) = grnf x
 
 instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) where
     Some m <> Some n = Some (m *> n)

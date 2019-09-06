@@ -23,12 +23,14 @@ module Data.Some.Newtype (
     ) where
 
 import Control.Applicative (Applicative (..))
+import Control.DeepSeq     (NFData (..))
 import Data.Monoid         (Monoid (..))
 import Data.Semigroup      (Semigroup (..))
 import GHC.Exts            (Any)
 import Unsafe.Coerce       (unsafeCoerce)
 
 import Data.GADT.Compare
+import Data.GADT.DeepSeq
 import Data.GADT.Show
 
 -- $setup
@@ -119,6 +121,9 @@ instance GCompare tag => Ord (Some tag) where
     compare x y =
         withSome x $ \x' ->
         withSome y $ \y' -> defaultCompare x' y'
+
+instance GNFData tag => NFData (Some tag) where
+    rnf x = withSome x grnf
 
 instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) where
     m <> n =
