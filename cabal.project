@@ -1,8 +1,5 @@
-packages: some type-equality-compat
+packages: .
 
 package some
   ghc-options: -Wall
   -- flags: -newtype-unsafe
-
-package type-equality-compat
-  ghc-options: -Wall
