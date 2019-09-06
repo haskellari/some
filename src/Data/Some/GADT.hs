@@ -9,7 +9,7 @@
 #elif __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy  #-}
 #endif
-module Data.Some (
+module Data.Some.GADT (
     Some(Some),
     mkSome,
     withSome,
@@ -26,6 +26,8 @@ import Data.GADT.Show
 --
 -- >>> data Tag :: * -> * where TagInt :: Tag Int; TagBool :: Tag Bool
 -- >>> instance GShow Tag where gshowsPrec _ TagInt = showString "TagInt"; gshowsPrec _ TagBool = showString "TagBool"
+-- >>> classify s = case s of "TagInt" -> [mkGReadResult TagInt]; "TagBool" -> [mkGReadResult TagBool]; _ -> []
+-- >>> instance GRead Tag where greadsPrec _ s = [ (r, rest) | (con, rest) <-  lex s, r <- classify con ]
 --
 -- You can either use constructor:
 --
@@ -56,6 +58,12 @@ import Data.GADT.Show
 -- >>> withSome y (mkSome . f)
 -- Some TagBool
 --
+-- >>> read "Some TagBool" :: Some Tag
+-- Some TagBool
+--
+-- >>> read "mkSome TagInt" :: Some Tag
+-- Some TagInt
+--
 data Some tag where
     Some :: tag a -> Some tag
 
@@ -76,11 +84,12 @@ instance GShow tag => Show (Some tag) where
         $ showString "Some "
         . gshowsPrec 11 thing
 
+-- | 
 instance GRead f => Read (Some f) where
     readsPrec p = readParen (p>10) $ \s ->
         [ (getGReadResult withTag Some, rest')
-        | let (con, rest) = splitAt 5 s
-        , con == "Some "
+        | (con, rest) <- lex s
+        , con == "Some" || con == "mkSome"
         , (withTag, rest') <- greadsPrec 11 rest
         ]
 
