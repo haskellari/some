@@ -46,7 +46,7 @@ library
     hs-source-dirs: src-safe
 
   if !impl(ghc >=7.8)
-    build-depends: type-equality-compat >= 1 && <1.1
+    build-depends: type-equality >= 1 && <1.1
 
   exposed-modules:
     Data.GADT.Compare
