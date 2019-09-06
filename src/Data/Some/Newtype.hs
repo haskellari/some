@@ -34,6 +34,8 @@ import Unsafe.Coerce     (unsafeCoerce)
 --
 -- >>> data Tag :: * -> * where TagInt :: Tag Int; TagBool :: Tag Bool
 -- >>> instance GShow Tag where gshowsPrec _ TagInt = showString "TagInt"; gshowsPrec _ TagBool = showString "TagBool"
+-- >>> classify s = case s of "TagInt" -> [mkGReadResult TagInt]; "TagBool" -> [mkGReadResult TagBool]; _ -> []
+-- >>> instance GRead Tag where greadsPrec _ s = [ (r, rest) | (con, rest) <-  lex s, r <- classify con ]
 --
 -- You can either use @PatternSynonyms@ (available with GHC >= 8.0)
 --
@@ -64,6 +66,12 @@ import Unsafe.Coerce     (unsafeCoerce)
 -- >>> withSome y (mkSome . f)
 -- Some TagBool
 --
+-- >>> read "Some TagBool" :: Some Tag
+-- Some TagBool
+--
+-- >>> read "mkSome TagInt" :: Some Tag
+-- Some TagInt
+--
 newtype Some tag = UnsafeSome (tag Any)
 
 #if __GLASGOW_HASKELL__ >= 801
@@ -90,8 +98,8 @@ instance GShow tag => Show (Some tag) where
 instance GRead f => Read (Some f) where
     readsPrec p = readParen (p>10) $ \s ->
         [ (getGReadResult withTag mkSome, rest')
-        | let (con, rest) = splitAt 5 s
-        , con == "Some "
+        | (con, rest) <- lex s
+        , con == "Some" || con == "mkSome"
         , (withTag, rest') <- greadsPrec 11 rest
         ]
 
