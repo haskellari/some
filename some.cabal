@@ -17,6 +17,8 @@ description:
   data Some f where
   \    Some :: f a -> Some f
   @
+  .
+  in few variants, and utilities to work with it.
 
 tested-with:
   GHC ==7.0.4
@@ -35,7 +37,7 @@ extra-source-files: ChangeLog.md
 
 flag newtype-unsafe
   description:
-    Use implemetation using @newtype@ and unsafe @Any@, instead of GADT
+    Use implementation using @newtype@ and unsafe @Any@, instead of GADT
 
   manual:      True
   default:     True
