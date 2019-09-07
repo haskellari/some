@@ -20,6 +20,7 @@ module Data.Some.Newtype (
     mkSome,
     withSome,
     mapSome,
+    traverseSome,
     ) where
 
 import Control.Applicative (Applicative (..))
@@ -95,8 +96,13 @@ mkSome = UnsafeSome . unsafeCoerce
 withSome :: Some tag -> (forall a. tag a -> b) -> b
 withSome (UnsafeSome thing) some = some (unsafeCoerce thing)
 
+-- | Map over argument.
 mapSome :: (forall t. f t -> g t) -> Some f -> Some g
 mapSome f (UnsafeSome x) = UnsafeSome (unsafeCoerce f x)
+
+-- | Traverse over argument.
+traverseSome :: Functor m => (forall a. f a -> m (g a)) -> Some f -> m (Some g)
+traverseSome f x = withSome x $ \x' -> fmap mkSome (f x')
 
 instance GShow tag => Show (Some tag) where
     showsPrec p some = withSome some $ \thing -> showParen (p > 10)

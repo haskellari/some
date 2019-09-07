@@ -14,6 +14,7 @@ module Data.Some.GADT (
     mkSome,
     withSome,
     mapSome,
+    traverseSome,
     ) where
 
 import Control.Applicative (Applicative (..))
@@ -84,6 +85,10 @@ withSome (Some thing) some = some thing
 -- | Map over argument.
 mapSome :: (forall x. f x -> g x) ->  Some f -> Some g
 mapSome nt (Some fx) = Some (nt fx)
+
+-- | Traverse over argument.
+traverseSome :: Functor m => (forall a. f a -> m (g a)) -> Some f -> m (Some g)
+traverseSome f (Some x) = fmap Some (f x)
 
 instance GShow tag => Show (Some tag) where
     showsPrec p (Some thing) = showParen (p > 10)
