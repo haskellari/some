@@ -356,6 +356,10 @@ mkSome t = S (\f -> f t)
 mapSome :: (forall x. f x -> g x) ->  Some f -> Some g
 mapSome nt (S fx) = S (\f -> fx (f . nt))
 
+-- | Traverse over argument.
+traverseSome :: Functor m => (forall a. f a -> m (g a)) -> Some f -> m (Some g)
+traverseSome f x = withSome x $ \x' -> fmap mkSome (f x')
+
 -------------------------------------------------------------------------------
 -- Church Some instances
 -------------------------------------------------------------------------------
