@@ -91,7 +91,7 @@ pattern Some x <- UnsafeSome ((unsafeCoerce :: tag Any -> tag a) -> x)
 
 -- | Constructor.
 mkSome :: tag a -> Some tag
-mkSome = UnsafeSome . unsafeCoerce
+mkSome = \x -> UnsafeSome (unsafeCoerce x)
 
 -- | Eliminator.
 withSome :: Some tag -> (forall a. tag a -> b) -> b

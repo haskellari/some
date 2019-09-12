@@ -1,3 +1,7 @@
+# 1.0.0.1
+
+- Fix issue with GHC#9585 https://gitlab.haskell.org/ghc/ghc/issues/9584
+
 # 1
 
 - Split out of `dependent-sum`
