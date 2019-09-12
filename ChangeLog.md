@@ -1,6 +1,10 @@
-# 1.0.0.2
+# 1.0.0.3
 
 - One less `unsafeCoerce` (thanks to David Feuer)
+
+# 1.0.0.2
+
+- Broken release
 
 # 1.0.0.1
 
