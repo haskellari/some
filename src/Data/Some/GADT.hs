@@ -14,6 +14,7 @@ module Data.Some.GADT (
     mkSome,
     withSome,
     mapSome,
+    foldSome,
     traverseSome,
     ) where
 
@@ -81,6 +82,10 @@ mkSome = Some
 -- | Eliminator.
 withSome :: Some tag -> (forall a. tag a -> b) -> b
 withSome (Some thing) some = some thing
+
+-- | @'flip' 'withSome'@
+foldSome :: (forall a. tag a -> b) -> Some tag -> b
+foldSome some (Some thing) = some thing
 
 -- | Map over argument.
 mapSome :: (forall x. f x -> g x) ->  Some f -> Some g

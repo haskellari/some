@@ -11,6 +11,7 @@ Some,
 mkSome,
 withSome,
 mapSome,
+foldSome,
 traverseSome,
 ) where
 
