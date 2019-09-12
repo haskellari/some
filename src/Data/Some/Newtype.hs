@@ -20,6 +20,7 @@ module Data.Some.Newtype (
     mkSome,
     withSome,
     mapSome,
+    foldSome,
     traverseSome,
     ) where
 
@@ -95,6 +96,10 @@ mkSome = UnsafeSome . unsafeCoerce
 -- | Eliminator.
 withSome :: Some tag -> (forall a. tag a -> b) -> b
 withSome (UnsafeSome thing) some = some (unsafeCoerce thing)
+
+-- | @'flip' 'withSome'@
+foldSome :: (forall a. tag a -> b) -> Some tag -> b
+foldSome some (UnsafeSome thing) = some (unsafeCoerce thing)
 
 -- | Map over argument.
 mapSome :: (forall t. f t -> g t) -> Some f -> Some g
