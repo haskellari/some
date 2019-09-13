@@ -1,5 +1,5 @@
 name:               some
-version:            1.0.0.2
+version:            1.0.0.3
 stability:          provisional
 cabal-version:      >=1.10
 build-type:         Simple
@@ -21,6 +21,8 @@ description:
   @
   .
   in few variants, and utilities to work with it.
+  .
+  If you are unsure which variant to use, use the one in "Data.Some" module.
 
 tested-with:
   GHC ==7.0.4
