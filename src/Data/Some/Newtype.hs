@@ -81,12 +81,19 @@ import Data.GADT.Show
 -- Some TagInt
 --
 newtype Some tag = UnsafeSome (tag Any)
-
+ 
 #if __GLASGOW_HASKELL__ >= 801
 {-# COMPLETE Some #-}
 pattern Some :: tag a -> Some tag
+#if __GLASGOW_HASKELL__ >= 802
+pattern Some x <- UnsafeSome x
+  where Some x = UnsafeSome ((unsafeCoerce :: tag a -> tag Any) x)
+#else
+-- There was a bug type checking pattern synonyms that prevented the
+-- obvious thing from working.
 pattern Some x <- UnsafeSome ((unsafeCoerce :: tag Any -> tag a) -> x)
   where Some x = UnsafeSome ((unsafeCoerce :: tag a -> tag Any) x)
+#endif
 #endif
 
 -- | Constructor.

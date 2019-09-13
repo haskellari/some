@@ -1,4 +1,5 @@
 packages: .
+tests: true
 
 package some
   ghc-options: -Wall
