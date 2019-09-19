@@ -3,7 +3,6 @@
 {-# LANGUAGE RankNTypes      #-}
 #if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE ViewPatterns    #-}
 #endif
 #if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds       #-}
