@@ -121,16 +121,16 @@ instance GRead ((:~:) a) where
         f (Refl, rest) = return (mkSome Refl, rest)
 
 instance (GRead a, GRead b) => GRead (Sum a b) where
-    greadsPrec d s = concat
-        [ readParen (d > 10)
+    greadsPrec d s =
+        readParen (d > 10)
             (\s1 -> [ (S $ \k -> withSome r (k . InL), t)
                     | ("InL", s2) <- lex s1
                     , (r, t) <- greadsPrec 11 s2 ]) s
-        , readParen (d > 10)
+        ++
+        readParen (d > 10)
             (\s1 -> [ (S $ \k -> withSome r (k . InR), t)
                     | ("InR", s2) <- lex s1
                     , (r, t) <- greadsPrec 11 s2 ]) s
-        ]
 
 -------------------------------------------------------------------------------
 -- GEq
