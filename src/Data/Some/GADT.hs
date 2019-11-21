@@ -13,6 +13,7 @@ module Data.Some.GADT (
     Some(Some),
     mkSome,
     withSome,
+    withSomeM,
     mapSome,
     foldSome,
     traverseSome,
@@ -82,6 +83,12 @@ mkSome = Some
 -- | Eliminator.
 withSome :: Some tag -> (forall a. tag a -> b) -> b
 withSome (Some thing) some = some thing
+
+-- | Monadic 'withSome'.
+--
+-- @since 1.0.1
+withSomeM :: Monad m => m (Some tag) -> (forall a. tag a -> m r) -> m r
+withSomeM m k = m >>= \s -> withSome s k
 
 -- | @'flip' 'withSome'@
 foldSome :: (forall a. tag a -> b) -> Some tag -> b

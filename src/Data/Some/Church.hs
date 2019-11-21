@@ -8,6 +8,7 @@ module Data.Some.Church (
     Some(..),
     mkSome,
     mapSome,
+    withSomeM,
     foldSome,
     traverseSome,
     ) where
