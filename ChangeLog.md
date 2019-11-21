@@ -1,6 +1,7 @@
 # 1.0.1
 
 - Add 'withSomeM' combinator.
+  Allows to workaround: https://gitlab.haskell.org/ghc/ghc/issues/15681
 
 # 1.0.0.3
 
