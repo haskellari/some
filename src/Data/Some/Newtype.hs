@@ -19,6 +19,7 @@ module Data.Some.Newtype (
 #endif
     mkSome,
     withSome,
+    withSomeM,
     mapSome,
     foldSome,
     traverseSome,
@@ -103,6 +104,12 @@ mkSome = \x -> UnsafeSome (unsafeCoerce x)
 -- | Eliminator.
 withSome :: Some tag -> (forall a. tag a -> b) -> b
 withSome (UnsafeSome thing) some = some (unsafeCoerce thing)
+
+-- | Monadic 'withSome'.
+--
+-- @since 1.0.1
+withSomeM :: Monad m => m (Some tag) -> (forall a. tag a -> m r) -> m r
+withSomeM m k = m >>= \s -> withSome s k
 
 -- | @'flip' 'withSome'@
 foldSome :: (forall a. tag a -> b) -> Some tag -> b

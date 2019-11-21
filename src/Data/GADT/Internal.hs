@@ -364,6 +364,12 @@ foldSome some (S thing) = thing some
 traverseSome :: Functor m => (forall a. f a -> m (g a)) -> Some f -> m (Some g)
 traverseSome f x = withSome x $ \x' -> fmap mkSome (f x')
 
+-- | Monadic 'withSome'.
+--
+-- @since 1.0.1
+withSomeM :: Monad m => m (Some tag) -> (forall a. tag a -> m r) -> m r
+withSomeM m k = m >>= \s -> withSome s k
+
 -------------------------------------------------------------------------------
 -- Church Some instances
 -------------------------------------------------------------------------------

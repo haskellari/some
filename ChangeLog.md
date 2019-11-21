@@ -1,3 +1,7 @@
+# 1.0.1
+
+- Add 'withSomeM' combinator.
+
 # 1.0.0.3
 
 - One less `unsafeCoerce` (thanks to David Feuer)

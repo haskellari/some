@@ -10,6 +10,7 @@ Some,
 #endif
 mkSome,
 withSome,
+withSomeM,
 mapSome,
 foldSome,
 traverseSome,
