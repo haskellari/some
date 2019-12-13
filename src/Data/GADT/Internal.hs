@@ -154,7 +154,7 @@ class GEq f where
     -- > extractMany :: GEq tag => tag a -> [DSum tag] -> [a]
     -- > extractMany t1 things = [ x | (t2 :=> x) <- things, Refl <- maybeToList (geq t1 t2)]
     --
-    -- (Making use of the 'DSum' type from "Data.Dependent.Sum" in both examples)
+    -- (Making use of the 'DSum' type from <https://hackage.haskell.org/package/dependent-sum/docs/Data-Dependent-Sum.html Data.Dependent.Sum> in both examples)
     geq :: f a -> f b -> Maybe (a :~: b)
 
 -- |If 'f' has a 'GEq' instance, this function makes a suitable default
