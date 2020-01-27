@@ -1,17 +1,11 @@
 {-# LANGUAGE CPP         #-}
 {-# LANGUAGE GADTs       #-}
 {-# LANGUAGE TypeOperators       #-}
-#if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds   #-}
-#endif
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
-#if (__GLASGOW_HASKELL__ >= 704 && __GLASGOW_HASKELL__ < 707) || __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE Safe        #-}
-#elif __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy #-}
-#endif
 module Data.GADT.DeepSeq (
     GNFData (..),
     ) where

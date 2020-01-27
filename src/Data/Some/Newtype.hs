@@ -1,21 +1,13 @@
 {-# LANGUAGE CPP             #-}
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE RankNTypes      #-}
-#if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PatternSynonyms #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 708
 {-# LANGUAGE RoleAnnotations #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds       #-}
-#endif
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
-#if __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy     #-}
-#endif
 module Data.Some.Newtype (
 #if __GLASGOW_HASKELL__ >= 801
     Some(Some),
@@ -96,10 +88,8 @@ type Some :: (k -> Type) -> Type
 #endif
 newtype Some tag = UnsafeSome (tag Any)
 
-#if __GLASGOW_HASKELL__ >= 708
 type role Some representational
-#endif
- 
+
 #if __GLASGOW_HASKELL__ >= 801
 {-# COMPLETE Some #-}
 pattern Some :: tag a -> Some tag
