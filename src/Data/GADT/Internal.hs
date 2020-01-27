@@ -69,12 +69,19 @@ import Data.Kind (Constraint)
 -- like @(forall a. Show (t a)) => ...@.  The easiest way to create instances would probably be
 -- to write (or derive) an @instance Show (T a)@, and then simply say:
 --
--- > instance GShow t where gshowsPrec = showsPrec
+-- > instance GShow t where gshowsPrec = defaultGshowsPrec
 #if __GLASGOW_HASKELL__ >= 810
 type GShow :: (k -> Type) -> Constraint
 #endif
 class GShow t where
     gshowsPrec :: Int -> t a -> ShowS
+
+-- |If 'f' has a 'Show (f a)' instance, this function makes a suitable default
+-- implementation of 'gshowsPrec'.
+--
+-- @since 1.0.4
+defaultGshowsPrec :: Show (t a) => Int -> t a -> ShowS
+defaultGshowsPrec = showsPrec
 
 gshows :: GShow t => t a -> ShowS
 gshows = gshowsPrec (-1)

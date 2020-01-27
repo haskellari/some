@@ -7,6 +7,7 @@
 module Data.GADT.Show (
     -- * Showing
     GShow  (..),
+    defaultGshowsPrec,
     gshows,
     gshow,
     -- * Reading
