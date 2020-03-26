@@ -1,4 +1,7 @@
 {-# LANGUAGE CPP                 #-}
+#if __GLASGOW_HASKELL__ >= 702
+{-# LANGUAGE DefaultSignatures #-}
+#endif
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE RankNTypes          #-}
@@ -45,6 +48,10 @@ import qualified Type.Reflection    as TR
 -- > instance GShow t where gshowsPrec = showsPrec
 class GShow t where
     gshowsPrec :: Int -> t a -> ShowS
+#if __GLASGOW_HASKELL__ >= 702
+    default gshowsPrec :: Show (t a) => Int -> t a -> ShowS
+    gshowsPrec = showsPrec
+#endif
 
 gshows :: GShow t => t a -> ShowS
 gshows = gshowsPrec (-1)
