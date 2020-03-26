@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP         #-}
 {-# LANGUAGE GADTs       #-}
 {-# LANGUAGE RankNTypes  #-}
+{-# LANGUAGE StandaloneDeriving #-}
 #if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds   #-}
 #endif
@@ -17,6 +18,8 @@ module Data.Some.GADT (
     mapSome,
     foldSome,
     traverseSome,
+    ThenSome (..),
+    BeforeSome (..)
     ) where
 
 import Control.Applicative (Applicative (..))
@@ -131,3 +134,39 @@ instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) 
 instance Applicative m => Data.Monoid.Monoid (Some m) where
     mempty = Some (pure ())
     mappend = (<>)
+
+-- | A 'Monoid' using '*>' for an underlying 'Applicative' functor.
+-- This has the same 'Monoid' instance as 'Some'.
+newtype ThenSome f = ThenSome { getThenSome :: Some f }
+-- Older versions of GHC need these to be standalone.
+deriving instance GEq f => Eq (ThenSome f)
+deriving instance GCompare f => Ord (ThenSome f)
+deriving instance GRead f => Read (ThenSome f)
+deriving instance GShow f => Show (ThenSome f)
+
+-- This should really be Apply, but we can't do that for now.
+instance Applicative f => Semigroup (ThenSome f) where
+    ThenSome (Some x) <> ThenSome (Some y) = ThenSome (Some (x *> y))
+
+instance Applicative f => Monoid (ThenSome f) where
+  mempty = ThenSome (Some (pure ()))
+#if !MIN_VERSION_base(4,11,0)
+  ThenSome (Some x) `mappend` ThenSome (Some y) = ThenSome (Some (x *> y))
+#endif
+
+-- | A 'Monoid' using '<*' for an underlying 'Applicative' functor.
+newtype BeforeSome f = BeforeSome { getBeforeSome :: Some f }
+deriving instance GEq f => Eq (BeforeSome f)
+deriving instance GCompare f => Ord (BeforeSome f)
+deriving instance GRead f => Read (BeforeSome f)
+deriving instance GShow f => Show (BeforeSome f)
+
+-- This should really be Apply, but we can't do that for now.
+instance Applicative f => Semigroup (BeforeSome f) where
+  BeforeSome (Some x) <> BeforeSome (Some y) = BeforeSome (Some (x <* y))
+
+instance Applicative f => Monoid (BeforeSome f) where
+  mempty = BeforeSome (mkSome (pure ()))
+#if !MIN_VERSION_base(4,11,0)
+  BeforeSome (Some x) `mappend` BeforeSome (Some y) = BeforeSome (Some (x <* y))
+#endif

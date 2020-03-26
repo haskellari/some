@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP             #-}
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE RankNTypes      #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 #if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PatternSynonyms #-}
 #endif
@@ -22,10 +24,15 @@ module Data.Some.Newtype (
     mapSome,
     foldSome,
     traverseSome,
+    ThenSome (..),
+    BeforeSome (..)
     ) where
 
 import Control.Applicative (Applicative (..))
 import Control.DeepSeq     (NFData (..))
+#if __GLASGOW_HASKELL__ >= 708
+import Data.Coerce         (coerce)
+#endif
 import Data.Monoid         (Monoid (..))
 import Data.Semigroup      (Semigroup (..))
 import GHC.Exts            (Any)
@@ -102,7 +109,11 @@ mkSome = \x -> UnsafeSome (unsafeCoerce x)
 
 -- | Eliminator.
 withSome :: Some tag -> (forall a. tag a -> b) -> b
-withSome (UnsafeSome thing) some = some (unsafeCoerce thing)
+withSome (UnsafeSome thing) some = some thing
+
+-- | Eliminator.
+usingSome :: forall tag b. (forall a. tag a -> b) -> Some tag -> b
+usingSome some = coerce (some :: tag Any -> b)
 
 -- | Monadic 'withSome'.
 --
@@ -112,11 +123,11 @@ withSomeM m k = m >>= \s -> withSome s k
 
 -- | @'flip' 'withSome'@
 foldSome :: (forall a. tag a -> b) -> Some tag -> b
-foldSome some (UnsafeSome thing) = some (unsafeCoerce thing)
+foldSome some (UnsafeSome thing) = some thing
 
 -- | Map over argument.
 mapSome :: (forall t. f t -> g t) -> Some f -> Some g
-mapSome f (UnsafeSome x) = UnsafeSome (unsafeCoerce f x)
+mapSome f (UnsafeSome x) = UnsafeSome (f x)
 
 -- | Traverse over argument.
 traverseSome :: Functor m => (forall a. f a -> m (g a)) -> Some f -> m (Some g)
@@ -137,24 +148,62 @@ instance GRead f => Read (Some f) where
         ]
 
 instance GEq tag => Eq (Some tag) where
-    x == y =
-        withSome x $ \x' ->
-        withSome y $ \y' -> defaultEq x' y'
+    (==) = coerce (defaultEq :: tag Any -> tag Any -> Bool)
 
 instance GCompare tag => Ord (Some tag) where
-    compare x y =
-        withSome x $ \x' ->
-        withSome y $ \y' -> defaultCompare x' y'
+    compare = coerce (defaultCompare :: tag Any -> tag Any -> Ordering)
 
 instance GNFData tag => NFData (Some tag) where
-    rnf x = withSome x grnf
+    rnf = usingSome grnf
 
 instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) where
-    m <> n =
-        withSome m $ \m' ->
-        withSome n $ \n' ->
-        mkSome (m' *> n')
+    (<>) = coerce ((<>) :: ThenSome m -> ThenSome m -> ThenSome m)
 
 instance Applicative m => Data.Monoid.Monoid (Some m) where
-    mempty = mkSome (pure ())
+    mempty = getThenSome mempty
+#if !MIN_VERSION_base(4,11,0)
     mappend = (<>)
+#endif
+
+-- | A 'Monoid' using '*>' for an underlying 'Applicative' functor.
+-- This has the same 'Monoid' instance as 'Some'.
+newtype ThenSome f = ThenSome { getThenSome :: Some f }
+deriving instance GEq f => Eq (ThenSome f)
+deriving instance GCompare f => Ord (ThenSome f)
+deriving instance GRead f => Read (ThenSome f)
+deriving instance GShow f => Show (ThenSome f)
+
+-- This should really be Apply, but we can't do that for now.
+instance Applicative f => Semigroup (ThenSome f) where
+    (<>) = coerce ((*>) :: f Any -> f Any -> f Any)
+
+instance Applicative f => Monoid (ThenSome f) where
+  mempty = ThenSome (mkSome (pure ()))
+#if !MIN_VERSION_base(4,11,0)
+  mappend = coerce ((*>) :: f Any -> f Any -> f Any)
+#endif
+
+-- | A 'Monoid' using '<*' for an underlying 'Applicative' functor.
+newtype BeforeSome f = BeforeSome { getBeforeSome :: Some f }
+deriving instance GEq f => Eq (BeforeSome f)
+deriving instance GCompare f => Ord (BeforeSome f)
+deriving instance GRead f => Read (BeforeSome f)
+deriving instance GShow f => Show (BeforeSome f)
+
+-- This should really be Apply, but we can't do that for now.
+instance Applicative f => Semigroup (BeforeSome f) where
+  (<>) = coerce ((<*) :: f Any -> f Any -> f Any)
+
+instance Applicative f => Monoid (BeforeSome f) where
+  mempty = BeforeSome (mkSome (pure ()))
+#if !MIN_VERSION_base(4,11,0)
+  -- Some older GHC versions choke on mappend = (<>)
+  -- because of some sort of constraint-resolution bug.
+  mappend = coerce ((<*) :: f Any -> f Any -> f Any)
+#endif
+
+
+#if __GLASGOW_HASKELL__ < 708
+coerce :: a -> b
+coerce x = unsafeCoerce x
+#endif

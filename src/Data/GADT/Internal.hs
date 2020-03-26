@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TypeOperators       #-}
 #if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds           #-}
@@ -348,6 +349,42 @@ newtype Some tag = S
       withSome :: forall r. (forall a. tag a -> r) -> r
     }
 
+newtype ThenSome tag = ThenSome {getThenSome :: Some tag}
+deriving instance GEq f => Eq (ThenSome f)
+deriving instance GCompare f => Ord (ThenSome f)
+deriving instance GRead f => Read (ThenSome f)
+deriving instance GShow f => Show (ThenSome f)
+
+instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (ThenSome m) where
+    ThenSome m <> ThenSome n =
+        withSome m $ \m' ->
+        withSome n $ \n' ->
+        ThenSome $ mkSome (m' *> n')
+
+instance Applicative m => Data.Monoid.Monoid (ThenSome m) where
+    mempty = ThenSome $ mkSome (pure ())
+#if !MIN_VERSION_base(4,11,0)
+    mappend = (<>)
+#endif
+
+newtype BeforeSome tag = BeforeSome {getBeforeSome :: Some tag}
+deriving instance GEq f => Eq (BeforeSome f)
+deriving instance GCompare f => Ord (BeforeSome f)
+deriving instance GRead f => Read (BeforeSome f)
+deriving instance GShow f => Show (BeforeSome f)
+
+instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (BeforeSome m) where
+    BeforeSome m <> BeforeSome n =
+        withSome m $ \m' ->
+        withSome n $ \n' ->
+        BeforeSome $ mkSome (m' <* n')
+
+instance Applicative m => Data.Monoid.Monoid (BeforeSome m) where
+    mempty = BeforeSome $ mkSome (pure ())
+#if !MIN_VERSION_base(4,11,0)
+    mappend = (<>)
+#endif
+
 -- | Constructor.
 mkSome :: tag a -> Some tag
 mkSome t = S (\f -> f t)
@@ -406,4 +443,6 @@ instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) 
 
 instance Applicative m => Data.Monoid.Monoid (Some m) where
     mempty = mkSome (pure ())
+#if !MIN_VERSION_base(4,11,0)
     mappend = (<>)
+#endif

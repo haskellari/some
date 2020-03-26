@@ -11,6 +11,8 @@ module Data.Some.Church (
     withSomeM,
     foldSome,
     traverseSome,
+    ThenSome (..),
+    BeforeSome (..)
     ) where
 
 import Data.GADT.Internal

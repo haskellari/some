@@ -14,6 +14,8 @@ withSomeM,
 mapSome,
 foldSome,
 traverseSome,
+ThenSome (..),
+BeforeSome (..)
 ) where
 
 #ifdef SOME_NEWTYPE
