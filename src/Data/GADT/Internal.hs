@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP                 #-}
+#if __GLASGOW_HASKELL__ >= 708
 {-# LANGUAGE DeriveDataTypeable  #-}
+#endif
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
