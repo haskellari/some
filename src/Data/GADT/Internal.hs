@@ -14,7 +14,7 @@
 #else
 {-# LANGUAGE Trustworthy         #-}
 #endif
-#undef GH
+#undef GHC
 #endif
 module Data.GADT.Internal where
 
