@@ -25,6 +25,7 @@ import Data.Maybe           (isJust, isNothing)
 import Data.Monoid          (Monoid (..))
 import Data.Semigroup       (Semigroup (..))
 import Data.Type.Equality   ((:~:) (..))
+import GHC.Generics         ((:+:) (..))
 
 #if __GLASGOW_HASKELL__ >=708
 import Data.Typeable (Typeable)
@@ -181,6 +182,15 @@ instance (GEq a, GEq b) => GEq (Product a b) where
         Refl <- geq y y'
         return Refl
 
+instance (GEq f, GEq g) => GEq (f :+: g) where
+  geq x y = case x of
+    L1 f -> case y of
+      L1 f' -> geq f f'
+      R1 _ -> Nothing
+    R1 g -> case y of
+      L1 _ -> Nothing
+      R1 g' -> geq g g'
+
 #if MIN_VERSION_base(4,10,0)
 instance GEq TR.TypeRep where
     geq = testEquality
@@ -296,6 +306,15 @@ instance (GCompare a, GCompare b) => GCompare (Product a b) where
             GLT -> GLT
             GEQ -> GEQ
             GGT -> GGT
+
+instance (GCompare f, GCompare g) => GCompare (f :+: g) where
+  gcompare x y = case x of
+    L1 f -> case y of
+      L1 f' -> gcompare f f'
+      R1 _ -> GLT
+    R1 g -> case y of
+      L1 _ -> GLT
+      R1 g' -> gcompare g g'
 
 -------------------------------------------------------------------------------
 -- Some
