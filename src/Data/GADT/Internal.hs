@@ -27,6 +27,9 @@ import Data.Maybe           (isJust, isNothing)
 import Data.Monoid          (Monoid (..))
 import Data.Semigroup       (Semigroup (..))
 import Data.Type.Equality   ((:~:) (..))
+#if MIN_VERSION_base(4,6,0)
+import GHC.Generics         ((:+:) (..), (:*:) (..))
+#endif
 
 #if __GLASGOW_HASKELL__ >=708
 import Data.Typeable (Typeable)
@@ -86,6 +89,28 @@ instance (GShow a, GShow b) => GShow (Product a b) where
         . showChar ' '
         . gshowsPrec 11 y
 
+#if MIN_VERSION_base(4,6,0)
+--
+-- | >>> gshow (L1 Refl :: ((:~:) Int :+: (:~:) Bool) Int)
+-- "L1 Refl"
+--
+-- @since 1.0.4
+instance (GShow a, GShow b) => GShow (a :+: b) where
+    gshowsPrec d = \s -> case s of
+        L1 x -> showParen (d > 10) (showString "L1 " . gshowsPrec 11 x)
+        R1 x -> showParen (d > 10) (showString "R1 " . gshowsPrec 11 x)
+
+-- | >>> gshow (Pair Refl Refl :: Product ((:~:) Int) ((:~:) Int) Int)
+-- "Refl :*: Refl"
+--
+-- @since 1.0.4
+instance (GShow a, GShow b) => GShow (a :*: b) where
+    gshowsPrec d (x :*: y) = showParen (d > 6)
+        $ gshowsPrec 6 x
+        . showString " :*: "
+        . gshowsPrec 6 y
+#endif
+
 -- |@GReadS t@ is equivalent to @ReadS (forall b. (forall a. t a -> b) -> b)@, which is
 -- in turn equivalent to @ReadS (Exists t)@ (with @data Exists t where Exists :: t a -> Exists t@)
 #if __GLASGOW_HASKELL__ >= 810
@@ -121,6 +146,11 @@ gread s g = withSome (hd [f | (f, "") <- greads s]) g where
 -- >>> greadMaybe "InL Refl" mkSome :: Maybe (Some (Sum ((:~:) Int) ((:~:) Bool)))
 -- Just (mkSome (InL Refl))
 --
+#if MIN_VERSION_base(4,6,0)
+-- >>> greadMaybe "L1 Refl" mkSome :: Maybe (Some ((:~:) Int :+: (:~:) Bool))
+-- Just (mkSome (L1 Refl))
+--
+#endif
 -- >>> greadMaybe "garbage" mkSome :: Maybe (Some ((:~:) Int))
 -- Nothing
 --
@@ -146,6 +176,21 @@ instance (GRead a, GRead b) => GRead (Sum a b) where
             (\s1 -> [ (S $ \k -> withSome r (k . InR), t)
                     | ("InR", s2) <- lex s1
                     , (r, t) <- greadsPrec 11 s2 ]) s
+
+#if MIN_VERSION_base(4,6,0)
+-- | @since 1.0.4
+instance (GRead a, GRead b) => GRead (a :+: b) where
+    greadsPrec d s =
+        readParen (d > 10)
+            (\s1 -> [ (S $ \k -> withSome r (k . L1), t)
+                    | ("L1", s2) <- lex s1
+                    , (r, t) <- greadsPrec 11 s2 ]) s
+        ++
+        readParen (d > 10)
+            (\s1 -> [ (S $ \k -> withSome r (k . R1), t)
+                    | ("R1", s2) <- lex s1
+                    , (r, t) <- greadsPrec 11 s2 ]) s
+#endif
 
 -------------------------------------------------------------------------------
 -- GEq
@@ -198,6 +243,21 @@ instance (GEq a, GEq b) => GEq (Product a b) where
         Refl <- geq x x'
         Refl <- geq y y'
         return Refl
+
+#if MIN_VERSION_base(4,6,0)
+-- | @since 1.0.4
+instance (GEq f, GEq g) => GEq (f :+: g) where
+  geq (L1 x) (L1 y) = geq x y
+  geq (R1 x) (R1 y) = geq x y
+  geq _ _ = Nothing
+
+-- | @since 1.0.4
+instance (GEq a, GEq b) => GEq (a :*: b) where
+    geq (x :*: y) (x' :*: y') = do
+        Refl <- geq x x'
+        Refl <- geq y y'
+        return Refl
+#endif
 
 #if MIN_VERSION_base(4,10,0)
 instance GEq TR.TypeRep where
@@ -320,6 +380,25 @@ instance (GCompare a, GCompare b) => GCompare (Product a b) where
             GLT -> GLT
             GEQ -> GEQ
             GGT -> GGT
+
+#if MIN_VERSION_base(4,6,0)
+-- | @since 1.0.4
+instance (GCompare f, GCompare g) => GCompare (f :+: g) where
+    gcompare (L1 x) (L1 y) = gcompare x y
+    gcompare (L1 _) (R1 _) = GLT
+    gcompare (R1 _) (L1 _) = GGT
+    gcompare (R1 x) (R1 y) = gcompare x y
+
+-- | @since 1.0.4
+instance (GCompare a, GCompare b) => GCompare (a :*: b) where
+    gcompare (x :*: y) (x' :*: y') = case gcompare x x' of
+        GLT -> GLT
+        GGT -> GGT
+        GEQ -> case gcompare y y' of
+            GLT -> GLT
+            GEQ -> GEQ
+            GGT -> GGT
+#endif
 
 -------------------------------------------------------------------------------
 -- Some
