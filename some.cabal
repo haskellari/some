@@ -63,6 +63,7 @@ library
   exposed-modules:
     Data.GADT.Compare
     Data.GADT.DeepSeq
+    Data.GADT.Instances
     Data.GADT.Show
     Data.Some
     Data.Some.Church
