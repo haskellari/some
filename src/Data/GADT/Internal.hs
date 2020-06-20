@@ -81,7 +81,7 @@ instance (GShow a, GShow b) => GShow (Product a b) where
 -- in turn equivalent to @ReadS (Exists t)@ (with @data Exists t where Exists :: t a -> Exists t@)
 type GReadS t = String -> [(Some t, String)]
 
-getGReadResult :: Some tag -> (forall a. tag a -> b) -> b
+getGReadResult :: Some tag -> forall b. (forall a. tag a -> b) -> b
 getGReadResult = withSome
 
 mkGReadResult :: tag a -> Some tag
