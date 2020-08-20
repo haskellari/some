@@ -13,6 +13,7 @@ module Data.GADT.Compare (
     GCompare (..),
     defaultCompare,
     GOrdering (..),
+    GOrdering' (..),
     ) where
 
 import Data.GADT.Internal

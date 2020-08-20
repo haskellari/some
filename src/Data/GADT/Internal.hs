@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TypeInType          #-}
 #if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds           #-}
 #endif
@@ -24,7 +25,7 @@ import Data.Functor.Sum     (Sum (..))
 import Data.Maybe           (isJust, isNothing)
 import Data.Monoid          (Monoid (..))
 import Data.Semigroup       (Semigroup (..))
-import Data.Type.Equality   ((:~:) (..))
+import Data.Type.Equality   ((:~:) (..), (:~~:) (..))
 
 #if __GLASGOW_HASKELL__ >=708
 import Data.Typeable (Typeable)
@@ -155,7 +156,7 @@ class GEq f where
     -- > extractMany t1 things = [ x | (t2 :=> x) <- things, Refl <- maybeToList (geq t1 t2)]
     --
     -- (Making use of the 'DSum' type from <https://hackage.haskell.org/package/dependent-sum/docs/Data-Dependent-Sum.html Data.Dependent.Sum> in both examples)
-    geq :: f a -> f b -> Maybe (a :~: b)
+    geq :: f a -> f b -> Maybe (a :~~: b)
 
 -- |If 'f' has a 'GEq' instance, this function makes a suitable default
 -- implementation of '(==)'.
@@ -168,7 +169,7 @@ defaultNeq :: GEq f => f a -> f b -> Bool
 defaultNeq x y = isNothing (geq x y)
 
 instance GEq ((:~:) a) where
-    geq (Refl :: a :~: b) (Refl :: a :~: c) = Just (Refl :: b :~: c)
+    geq (Refl :: a :~: b) (Refl :: a :~: c) = Just (HRefl :: b :~~: c)
 
 instance (GEq a, GEq b) => GEq (Sum a b) where
     geq (InL x) (InL y) = geq x y
@@ -177,13 +178,15 @@ instance (GEq a, GEq b) => GEq (Sum a b) where
 
 instance (GEq a, GEq b) => GEq (Product a b) where
     geq (Pair x y) (Pair x' y') = do
-        Refl <- geq x x'
-        Refl <- geq y y'
-        return Refl
+        HRefl <- geq x x'
+        HRefl <- geq y y'
+        return HRefl
 
 #if MIN_VERSION_base(4,10,0)
 instance GEq TR.TypeRep where
-    geq = testEquality
+    geq a b= case testEquality a b of
+      Just Refl -> Just HRefl
+      Nothing -> Nothing
 #endif
 
 -------------------------------------------------------------------------------
@@ -219,7 +222,7 @@ instance GEq TR.TypeRep where
 -- |A type for the result of comparing GADT constructors; the type parameters
 -- of the GADT values being compared are included so that in the case where
 -- they are equal their parameter types can be unified.
-data GOrdering a b where
+data GOrdering (a :: k1) (b :: k2) where
     GLT :: GOrdering a b
     GEQ :: GOrdering t t
     GGT :: GOrdering a b
@@ -249,11 +252,13 @@ instance Show (GOrdering a b) where
 instance GShow (GOrdering a) where
     gshowsPrec = showsPrec
 
-instance GRead (GOrdering a) where
+newtype GOrdering' (a :: k) (b :: k) = GO {unGo :: GOrdering a b}
+
+instance GRead (GOrdering' a) where
     greadsPrec _ s = case con of
-        "GGT"   -> [(mkSome GGT, rest)]
-        "GEQ"   -> [(mkSome GEQ, rest)]
-        "GLT"   -> [(mkSome GLT, rest)]
+        "GGT"   -> [(mkSome $ GO GGT, rest)]
+        "GEQ"   -> [(mkSome $ GO GEQ, rest)]
+        "GLT"   -> [(mkSome $ GO GLT, rest)]
         _       -> []
         where (con, rest) = splitAt 3 s
 
