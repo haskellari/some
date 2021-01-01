@@ -82,7 +82,7 @@ instance (GShow a, GShow b) => GShow (Product a b) where
 type GReadS t = String -> [(Some t, String)]
 
 getGReadResult :: Some tag -> (forall a. tag a -> b) -> b
-getGReadResult = withSome
+getGReadResult t k = withSome t k
 
 mkGReadResult :: tag a -> Some tag
 mkGReadResult = mkSome
