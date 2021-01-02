@@ -1,3 +1,7 @@
+# 1.0.1.1
+
+- GHC-9.0 compatibility
+
 # 1.0.1
 
 - Add 'withSomeM' combinator.

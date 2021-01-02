@@ -1,6 +1,5 @@
 name:               some
-version:            1.0.1
-x-revision:         1
+version:            1.0.1.1
 stability:          provisional
 cabal-version:      >=1.10
 build-type:         Simple
