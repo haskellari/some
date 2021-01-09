@@ -1,4 +1,9 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP         #-}
+#if __GLASGOW_HASKELL__ >= 704
+{-# LANGUAGE Safe        #-}
+#elif __GLASGOW_HASKELL__ >= 702
+{-# LANGUAGE Trustworthy #-}
+#endif
 -- | An existential type.
 --
 -- The constructor is exported only on GHC-8 and later.
