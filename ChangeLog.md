@@ -1,6 +1,9 @@
-# 1.0.1.1
+# 1.0.2
 
-- GHC-9.0 compatibility
+- Explicitly mark `Data.Some` as `Safe`.
+  It was previously inferred, yet it was Safe too,
+  as it only re-exports other explicitly marked modules.
+- Allow `base-4.15`, GHC-9.0 compatibility
 
 # 1.0.1
 
