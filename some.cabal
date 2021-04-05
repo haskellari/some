@@ -9,7 +9,7 @@ author:
 maintainer:         Oleg Grenrus <oleg.grenrus@iki.fi>
 license:            BSD3
 license-file:       LICENSE
-homepage:           https://github.com/phadej/some
+homepage:           https://github.com/haskellari/some
 category:           Data, Dependent Types
 synopsis:           Existential type: Some
 description:
@@ -50,7 +50,7 @@ flag newtype-unsafe
 
 source-repository head
   type:     git
-  location: git://github.com/phadej/some.git
+  location: git://github.com/haskellari/some.git
   subdir:   some
 
 library
