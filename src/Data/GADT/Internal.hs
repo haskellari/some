@@ -7,14 +7,16 @@
 #if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds           #-}
 #endif
-#if __GLASGOW_HASKELL__ >= 704
-#define GHC __GLASGOW_HASKELL__
-#if (GHC >= 704 && GHC <707) || GHC >= 801
-{-# LANGUAGE Safe                #-}
-#else
-{-# LANGUAGE Trustworthy         #-}
+#if __GLASGOW_HASKELL__ >= 708
+{-# LANGUAGE RoleAnnotations #-}
 #endif
-#undef GHC
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
+#if (__GLASGOW_HASKELL__ >= 704 && __GLASGOW_HASKELL__ < 707) || __GLASGOW_HASKELL__ >= 801
+{-# LANGUAGE Safe                #-}
+#elif __GLASGOW_HASKELL__ >= 702
+{-# LANGUAGE Trustworthy         #-}
 #endif
 module Data.GADT.Internal where
 
@@ -35,6 +37,10 @@ import           Data.Type.Equality (testEquality)
 import qualified Type.Reflection    as TR
 #endif
 
+#if __GLASGOW_HASKELL__ >= 810
+import Data.Kind (Type, Constraint)
+#endif
+
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs
 
@@ -43,6 +49,9 @@ import qualified Type.Reflection    as TR
 -- to write (or derive) an @instance Show (T a)@, and then simply say:
 --
 -- > instance GShow t where gshowsPrec = showsPrec
+#if __GLASGOW_HASKELL__ >= 810
+type GShow :: (k -> Type) -> Constraint
+#endif
 class GShow t where
     gshowsPrec :: Int -> t a -> ShowS
 
@@ -79,6 +88,9 @@ instance (GShow a, GShow b) => GShow (Product a b) where
 
 -- |@GReadS t@ is equivalent to @ReadS (forall b. (forall a. t a -> b) -> b)@, which is
 -- in turn equivalent to @ReadS (Exists t)@ (with @data Exists t where Exists :: t a -> Exists t@)
+#if __GLASGOW_HASKELL__ >= 810
+type GReadS :: (k -> Type) -> Type
+#endif
 type GReadS t = String -> [(Some t, String)]
 
 getGReadResult :: Some tag -> (forall a. tag a -> b) -> b
@@ -90,6 +102,9 @@ mkGReadResult = mkSome
 -- |'Read'-like class for 1-type-parameter GADTs.  Unlike 'GShow', this one cannot be
 -- mechanically derived from a 'Read' instance because 'greadsPrec' must choose the phantom
 -- type based on the 'String' being parsed.
+#if __GLASGOW_HASKELL__ >= 810
+type GRead :: (k -> Type) -> Constraint
+#endif
 class GRead t where
     greadsPrec :: Int -> GReadS t
 
@@ -139,6 +154,9 @@ instance (GRead a, GRead b) => GRead (Sum a b) where
 -- |A class for type-contexts which contain enough information
 -- to (at least in some cases) decide the equality of types
 -- occurring within them.
+#if __GLASGOW_HASKELL__ >= 810
+type GEq :: (k -> Type) -> Constraint
+#endif
 class GEq f where
     -- |Produce a witness of type-equality, if one exists.
     --
@@ -219,6 +237,9 @@ instance GEq TR.TypeRep where
 -- |A type for the result of comparing GADT constructors; the type parameters
 -- of the GADT values being compared are included so that in the case where
 -- they are equal their parameter types can be unified.
+#if __GLASGOW_HASKELL__ >= 810
+type GOrdering :: k -> k -> Type
+#endif
 data GOrdering a b where
     GLT :: GOrdering a b
     GEQ :: GOrdering t t
@@ -259,6 +280,9 @@ instance GRead (GOrdering a) where
 
 -- |Type class for comparable GADT-like structures.  When 2 things are equal,
 -- must return a witness that their parameter types are equal as well ('GEQ').
+#if __GLASGOW_HASKELL__ >= 810
+type GCompare :: (k -> Type) -> Constraint
+#endif
 class GEq f => GCompare f where
     gcompare :: f a -> f b -> GOrdering a b
 
@@ -343,10 +367,17 @@ instance (GCompare a, GCompare b) => GCompare (Product a b) where
 -- >>> read "mkSome TagInt" :: Some Tag
 -- mkSome TagInt
 --
+#if __GLASGOW_HASKELL__ >= 810
+type Some :: (k -> Type) -> Type
+#endif
 newtype Some tag = S
     { -- | Eliminator.
       withSome :: forall r. (forall a. tag a -> r) -> r
     }
+
+#if __GLASGOW_HASKELL__ >= 708
+type role Some representational
+#endif
 
 -- | Constructor.
 mkSome :: tag a -> Some tag
