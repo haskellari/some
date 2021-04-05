@@ -4,6 +4,12 @@
 #if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds   #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 708
+{-# LANGUAGE RoleAnnotations #-}
+#endif
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
+#endif
 #if __GLASGOW_HASKELL__ >= 704
 {-# LANGUAGE Safe        #-}
 #elif __GLASGOW_HASKELL__ >= 702
@@ -24,9 +30,14 @@ import Control.DeepSeq     (NFData (..))
 import Data.Monoid         (Monoid (..))
 import Data.Semigroup      (Semigroup (..))
 
+#if __GLASGOW_HASKELL__ >= 810
+import Data.Kind (Type)
+#endif
+
 import Data.GADT.Compare
 import Data.GADT.DeepSeq
 import Data.GADT.Show
+
 
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs
@@ -73,8 +84,15 @@ import Data.GADT.Show
 -- >>> read "mkSome TagInt" :: Some Tag
 -- Some TagInt
 --
+#if __GLASGOW_HASKELL__ >= 810
+type Some :: (k -> Type) -> Type
+#endif
 data Some tag where
     Some :: tag a -> Some tag
+
+#if __GLASGOW_HASKELL__ >= 708
+type role Some representational
+#endif
 
 -- | Constructor.
 mkSome :: tag a -> Some tag

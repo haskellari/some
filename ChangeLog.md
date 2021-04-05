@@ -1,3 +1,8 @@
+# 1.0.3
+
+- Make `GNFData` PolyKinded.
+- Add `GNFData ((:~:) a)` and `GNFData TypeRep` instances
+
 # 1.0.2
 
 - Explicitly mark `Data.Some` as `Safe`.

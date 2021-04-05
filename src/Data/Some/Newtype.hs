@@ -4,8 +4,14 @@
 #if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PatternSynonyms #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 708
+{-# LANGUAGE RoleAnnotations #-}
+#endif
 #if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds       #-}
+#endif
+#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE StandaloneKindSignatures #-}
 #endif
 #if __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy     #-}
@@ -30,6 +36,10 @@ import Data.Monoid         (Monoid (..))
 import Data.Semigroup      (Semigroup (..))
 import GHC.Exts            (Any)
 import Unsafe.Coerce       (unsafeCoerce)
+
+#if __GLASGOW_HASKELL__ >= 810
+import Data.Kind (Type)
+#endif
 
 import Data.GADT.Compare
 import Data.GADT.DeepSeq
@@ -80,7 +90,14 @@ import Data.GADT.Show
 -- >>> read "mkSome TagInt" :: Some Tag
 -- Some TagInt
 --
+#if __GLASGOW_HASKELL__ >= 810
+type Some :: (k -> Type) -> Type
+#endif
 newtype Some tag = UnsafeSome (tag Any)
+
+#if __GLASGOW_HASKELL__ >= 708
+type role Some representational
+#endif
  
 #if __GLASGOW_HASKELL__ >= 801
 {-# COMPLETE Some #-}
