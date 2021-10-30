@@ -1,5 +1,6 @@
 name:               some
 version:            1.0.3
+x-revision:         1
 stability:          provisional
 cabal-version:      >=1.10
 build-type:         Simple
@@ -38,6 +39,7 @@ tested-with:
    || ==8.8.4
    || ==8.10.4
    || ==9.0.1
+   || ==9.2.1
 
 extra-source-files: ChangeLog.md
 
@@ -72,7 +74,7 @@ library
 
   other-modules:    Data.GADT.Internal
   build-depends:
-      base     >=4.3     && <4.16
+      base     >=4.3     && <4.17
     , deepseq  >=1.3.0.0 && <1.5
 
   if !impl(ghc >=7.8)
