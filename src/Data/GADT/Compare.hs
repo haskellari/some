@@ -7,6 +7,7 @@
 module Data.GADT.Compare (
     -- * Equality
     GEq (..),
+    defaultGeq,
     defaultEq,
     defaultNeq,
     -- * Total order comparison
