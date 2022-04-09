@@ -19,6 +19,14 @@ import Data.Functor.Product (Product (..))
 import Data.Functor.Sum     (Sum (..))
 import Data.Type.Equality   ((:~:) (..))
 
+#if MIN_VERSION_base(4,9,0)
+#if MIN_VERSION_base(4,10,0)
+import  Data.Type.Equality ((:~~:) (..))
+#else
+import  Data.Type.Equality.Hetero ((:~~:) (..))
+#endif
+#endif
+
 #if MIN_VERSION_base(4,10,0)
 import qualified Type.Reflection    as TR
 #endif
@@ -44,6 +52,12 @@ instance (GNFData a, GNFData b) => GNFData (Sum a b) where
 -- | @since 1.0.3
 instance GNFData ((:~:) a) where
     grnf Refl = ()
+
+#if MIN_VERSION_base(4,9,0)
+-- | @since 1.0.4
+instance GNFData ((:~~:) a) where
+    grnf HRefl = ()
+#endif
 
 #if MIN_VERSION_base(4,10,0)
 -- | @since 1.0.3
