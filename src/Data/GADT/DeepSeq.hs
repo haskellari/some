@@ -20,6 +20,8 @@ import Data.Functor.Sum     (Sum (..))
 import Data.Type.Equality   ((:~:) (..))
 
 #if MIN_VERSION_base(4,10,0)
+import           Data.Type.Equality ((:~~:) (..))
+
 import qualified Type.Reflection    as TR
 #endif
 
@@ -46,6 +48,10 @@ instance GNFData ((:~:) a) where
     grnf Refl = ()
 
 #if MIN_VERSION_base(4,10,0)
+-- | @since 1.0.4
+instance GNFData ((:~~:) a) where
+    grnf HRefl = ()
+
 -- | @since 1.0.3
 instance GNFData TR.TypeRep where
     grnf = TR.rnfTypeRep

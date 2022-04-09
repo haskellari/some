@@ -13,6 +13,9 @@
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 802 && __GLASGOW_HASKELL__ < 805
+{-# LANGUAGE TypeInType #-}
+#endif
 #if (__GLASGOW_HASKELL__ >= 704 && __GLASGOW_HASKELL__ < 707) || __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE Safe                #-}
 #elif __GLASGOW_HASKELL__ >= 702
@@ -33,12 +36,16 @@ import Data.Typeable (Typeable)
 #endif
 
 #if MIN_VERSION_base(4,10,0)
-import           Data.Type.Equality (testEquality)
+import           Data.Type.Equality ((:~~:) (..), testEquality)
 import qualified Type.Reflection    as TR
 #endif
 
+#if __GLASGOW_HASKELL__ >= 800
+import Data.Kind (Type)
+#endif
+
 #if __GLASGOW_HASKELL__ >= 810
-import Data.Kind (Type, Constraint)
+import Data.Kind (Constraint)
 #endif
 
 -- $setup
@@ -65,6 +72,10 @@ instance GShow ((:~:) a) where
     gshowsPrec _ Refl = showString "Refl"
 
 #if MIN_VERSION_base(4,10,0)
+-- | @since 1.0.4
+instance GShow ((:~~:) a) where
+    gshowsPrec _ HRefl = showString "HRefl"
+
 instance GShow TR.TypeRep where
     gshowsPrec = showsPrec
 #endif
@@ -135,6 +146,17 @@ instance GRead ((:~:) a) where
         f :: forall x. (x :~: x, String) -> [(Some ((:~:) x), String)]
         f (Refl, rest) = return (mkSome Refl, rest)
 
+#if MIN_VERSION_base(4,10,0)
+-- | @since 1.0.4
+instance forall k1 k2 (a :: k1). k1 ~ k2 => GRead ((:~~:) a :: k2 -> Type) where
+    greadsPrec p s = readsPrec p s >>= f
+      where
+        f :: forall k (x :: k)
+          .  (x :~~: x, String)
+          -> [(Some ((:~~:) x :: k -> Type), String)]
+        f (HRefl, rest) = return (mkSome (HRefl :: x :~~: x), rest)
+#endif
+
 instance (GRead a, GRead b) => GRead (Sum a b) where
     greadsPrec d s =
         readParen (d > 10)
@@ -187,6 +209,12 @@ defaultNeq x y = isNothing (geq x y)
 
 instance GEq ((:~:) a) where
     geq (Refl :: a :~: b) (Refl :: a :~: c) = Just (Refl :: b :~: c)
+
+#if MIN_VERSION_base(4,10,0)
+-- | @since 1.0.4
+instance GEq ((:~~:) a) where
+    geq (HRefl :: a :~~: b) (HRefl :: a :~~: c) = Just (Refl :: b :~: c)
+#endif
 
 instance (GEq a, GEq b) => GEq (Sum a b) where
     geq (InL x) (InL y) = geq x y
@@ -290,6 +318,10 @@ instance GCompare ((:~:) a) where
     gcompare Refl Refl = GEQ
 
 #if MIN_VERSION_base(4,10,0)
+-- | @since 1.0.4
+instance GCompare ((:~~:) a) where
+    gcompare HRefl HRefl = GEQ
+
 instance GCompare TR.TypeRep where
     gcompare t1 t2 =
       case testEquality t1 t2 of
