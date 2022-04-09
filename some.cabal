@@ -72,6 +72,11 @@ library
     Data.Some.GADT
     Data.Some.Newtype
 
+  -- Proxy for base >= 4.7.0
+  if impl(ghc >= 7.8.2)
+    exposed-modules:
+      Data.GADT.Coerce
+
   other-modules:    Data.GADT.Internal
   build-depends:
       base     >=4.3     && <4.18
