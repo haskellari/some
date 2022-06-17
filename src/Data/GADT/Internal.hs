@@ -13,8 +13,11 @@
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
+#if __GLASGOW_HASKELL__ >= 800 && __GLASGOW_HASKELL__ < 805
+{-# LANGUAGE TypeInType #-}
+#endif
 #if (__GLASGOW_HASKELL__ >= 704 && __GLASGOW_HASKELL__ < 707) || __GLASGOW_HASKELL__ >= 801
-{-# LANGUAGE Safe                #-}
+{-# LANGUAGE Safe #-}
 #elif __GLASGOW_HASKELL__ >= 702
 {-# LANGUAGE Trustworthy         #-}
 #endif
@@ -27,9 +30,20 @@ import Data.Maybe           (isJust, isNothing)
 import Data.Monoid          (Monoid (..))
 import Data.Semigroup       (Semigroup (..))
 import Data.Type.Equality   ((:~:) (..))
+#if MIN_VERSION_base(4,6,0)
+import GHC.Generics         ((:+:) (..), (:*:) (..))
+#endif
 
 #if __GLASGOW_HASKELL__ >=708
 import Data.Typeable (Typeable)
+#endif
+
+#if MIN_VERSION_base(4,9,0)
+#if MIN_VERSION_base(4,10,0)
+import  Data.Type.Equality ((:~~:) (..))
+#else
+import  Data.Type.Equality.Hetero ((:~~:) (..))
+#endif
 #endif
 
 #if MIN_VERSION_base(4,10,0)
@@ -37,23 +51,37 @@ import           Data.Type.Equality (testEquality)
 import qualified Type.Reflection    as TR
 #endif
 
+#if __GLASGOW_HASKELL__ >= 800
+import Data.Kind (Type)
+#endif
+
 #if __GLASGOW_HASKELL__ >= 810
-import Data.Kind (Type, Constraint)
+import Data.Kind (Constraint)
 #endif
 
 -- $setup
--- >>> :set -XKindSignatures -XGADTs
+-- >>> :set -XKindSignatures -XGADTs -XTypeOperators
+-- >>> import Data.Type.Equality
+-- >>> import Data.Functor.Sum
+-- >>> import GHC.Generics
 
 -- |'Show'-like class for 1-type-parameter GADTs.  @GShow t => ...@ is equivalent to something
 -- like @(forall a. Show (t a)) => ...@.  The easiest way to create instances would probably be
 -- to write (or derive) an @instance Show (T a)@, and then simply say:
 --
--- > instance GShow t where gshowsPrec = showsPrec
+-- > instance GShow t where gshowsPrec = defaultGshowsPrec
 #if __GLASGOW_HASKELL__ >= 810
 type GShow :: (k -> Type) -> Constraint
 #endif
 class GShow t where
     gshowsPrec :: Int -> t a -> ShowS
+
+-- |If 'f' has a 'Show (f a)' instance, this function makes a suitable default
+-- implementation of 'gshowsPrec'.
+--
+-- @since 1.0.4
+defaultGshowsPrec :: Show (t a) => Int -> t a -> ShowS
+defaultGshowsPrec = showsPrec
 
 gshows :: GShow t => t a -> ShowS
 gshows = gshowsPrec (-1)
@@ -63,6 +91,12 @@ gshow x = gshows x ""
 
 instance GShow ((:~:) a) where
     gshowsPrec _ Refl = showString "Refl"
+
+#if MIN_VERSION_base(4,9,0)
+-- | @since 1.0.4
+instance GShow ((:~~:) a) where
+    gshowsPrec _ HRefl = showString "HRefl"
+#endif
 
 #if MIN_VERSION_base(4,10,0)
 instance GShow TR.TypeRep where
@@ -85,6 +119,28 @@ instance (GShow a, GShow b) => GShow (Product a b) where
         . gshowsPrec 11 x
         . showChar ' '
         . gshowsPrec 11 y
+
+#if MIN_VERSION_base(4,6,0)
+--
+-- | >>> gshow (L1 Refl :: ((:~:) Int :+: (:~:) Bool) Int)
+-- "L1 Refl"
+--
+-- @since 1.0.4
+instance (GShow a, GShow b) => GShow (a :+: b) where
+    gshowsPrec d = \s -> case s of
+        L1 x -> showParen (d > 10) (showString "L1 " . gshowsPrec 11 x)
+        R1 x -> showParen (d > 10) (showString "R1 " . gshowsPrec 11 x)
+
+-- | >>> gshow (Pair Refl Refl :: Product ((:~:) Int) ((:~:) Int) Int)
+-- "Refl :*: Refl"
+--
+-- @since 1.0.4
+instance (GShow a, GShow b) => GShow (a :*: b) where
+    gshowsPrec d (x :*: y) = showParen (d > 6)
+        $ gshowsPrec 6 x
+        . showString " :*: "
+        . gshowsPrec 6 y
+#endif
 
 -- |@GReadS t@ is equivalent to @ReadS (forall b. (forall a. t a -> b) -> b)@, which is
 -- in turn equivalent to @ReadS (Exists t)@ (with @data Exists t where Exists :: t a -> Exists t@)
@@ -121,6 +177,9 @@ gread s g = withSome (hd [f | (f, "") <- greads s]) g where
 -- >>> greadMaybe "InL Refl" mkSome :: Maybe (Some (Sum ((:~:) Int) ((:~:) Bool)))
 -- Just (mkSome (InL Refl))
 --
+-- >>> greadMaybe "L1 Refl" mkSome :: Maybe (Some ((:~:) Int :+: (:~:) Bool))
+-- Just (mkSome (L1 Refl))
+--
 -- >>> greadMaybe "garbage" mkSome :: Maybe (Some ((:~:) Int))
 -- Nothing
 --
@@ -130,10 +189,19 @@ greadMaybe s g = case [f | (f, "") <- greads s] of
     _       -> Nothing
 
 instance GRead ((:~:) a) where
-    greadsPrec p s = readsPrec p s >>= f
-      where
-        f :: forall x. (x :~: x, String) -> [(Some ((:~:) x), String)]
-        f (Refl, rest) = return (mkSome Refl, rest)
+    greadsPrec _ = readParen False (\s ->
+        [ (S $ \k -> k (Refl :: a :~: a), t)
+        | ("Refl", t) <- lex s
+        ])
+
+#if MIN_VERSION_base(4,9,0)
+-- | @since 1.0.4
+instance k1 ~ k2 => GRead ((:~~:) (a :: k1) :: k2 -> Type) where
+    greadsPrec _ = readParen False (\s ->
+        [ (S $ \k -> k (HRefl :: a :~~: a), t)
+        | ("HRefl", t) <- lex s
+        ])
+#endif
 
 instance (GRead a, GRead b) => GRead (Sum a b) where
     greadsPrec d s =
@@ -146,6 +214,21 @@ instance (GRead a, GRead b) => GRead (Sum a b) where
             (\s1 -> [ (S $ \k -> withSome r (k . InR), t)
                     | ("InR", s2) <- lex s1
                     , (r, t) <- greadsPrec 11 s2 ]) s
+
+#if MIN_VERSION_base(4,6,0)
+-- | @since 1.0.4
+instance (GRead a, GRead b) => GRead (a :+: b) where
+    greadsPrec d s =
+        readParen (d > 10)
+            (\s1 -> [ (S $ \k -> withSome r (k . L1), t)
+                    | ("L1", s2) <- lex s1
+                    , (r, t) <- greadsPrec 11 s2 ]) s
+        ++
+        readParen (d > 10)
+            (\s1 -> [ (S $ \k -> withSome r (k . R1), t)
+                    | ("R1", s2) <- lex s1
+                    , (r, t) <- greadsPrec 11 s2 ]) s
+#endif
 
 -------------------------------------------------------------------------------
 -- GEq
@@ -175,6 +258,15 @@ class GEq f where
     -- (Making use of the 'DSum' type from <https://hackage.haskell.org/package/dependent-sum/docs/Data-Dependent-Sum.html Data.Dependent.Sum> in both examples)
     geq :: f a -> f b -> Maybe (a :~: b)
 
+-- |If 'f' has a 'GCompare' instance, this function makes a suitable default
+-- implementation of 'geq'.
+--
+-- @since 1.0.4
+defaultGeq :: GCompare f => f a -> f b -> Maybe (a :~: b)
+defaultGeq a b = case gcompare a b of
+    GEQ -> Just Refl
+    _   -> Nothing
+
 -- |If 'f' has a 'GEq' instance, this function makes a suitable default
 -- implementation of '(==)'.
 defaultEq :: GEq f => f a -> f b -> Bool
@@ -188,6 +280,12 @@ defaultNeq x y = isNothing (geq x y)
 instance GEq ((:~:) a) where
     geq (Refl :: a :~: b) (Refl :: a :~: c) = Just (Refl :: b :~: c)
 
+#if MIN_VERSION_base(4,9,0)
+-- | @since 1.0.4
+instance GEq ((:~~:) a) where
+    geq (HRefl :: a :~~: b) (HRefl :: a :~~: c) = Just (Refl :: b :~: c)
+#endif
+
 instance (GEq a, GEq b) => GEq (Sum a b) where
     geq (InL x) (InL y) = geq x y
     geq (InR x) (InR y) = geq x y
@@ -198,6 +296,21 @@ instance (GEq a, GEq b) => GEq (Product a b) where
         Refl <- geq x x'
         Refl <- geq y y'
         return Refl
+
+#if MIN_VERSION_base(4,6,0)
+-- | @since 1.0.4
+instance (GEq f, GEq g) => GEq (f :+: g) where
+  geq (L1 x) (L1 y) = geq x y
+  geq (R1 x) (R1 y) = geq x y
+  geq _ _ = Nothing
+
+-- | @since 1.0.4
+instance (GEq a, GEq b) => GEq (a :*: b) where
+    geq (x :*: y) (x' :*: y') = do
+        Refl <- geq x x'
+        Refl <- geq y y'
+        return Refl
+#endif
 
 #if MIN_VERSION_base(4,10,0)
 instance GEq TR.TypeRep where
@@ -289,6 +402,12 @@ class GEq f => GCompare f where
 instance GCompare ((:~:) a) where
     gcompare Refl Refl = GEQ
 
+#if MIN_VERSION_base(4,9,0)
+-- | @since 1.0.4
+instance GCompare ((:~~:) a) where
+    gcompare HRefl HRefl = GEQ
+#endif
+
 #if MIN_VERSION_base(4,10,0)
 instance GCompare TR.TypeRep where
     gcompare t1 t2 =
@@ -320,6 +439,25 @@ instance (GCompare a, GCompare b) => GCompare (Product a b) where
             GLT -> GLT
             GEQ -> GEQ
             GGT -> GGT
+
+#if MIN_VERSION_base(4,6,0)
+-- | @since 1.0.4
+instance (GCompare f, GCompare g) => GCompare (f :+: g) where
+    gcompare (L1 x) (L1 y) = gcompare x y
+    gcompare (L1 _) (R1 _) = GLT
+    gcompare (R1 _) (L1 _) = GGT
+    gcompare (R1 x) (R1 y) = gcompare x y
+
+-- | @since 1.0.4
+instance (GCompare a, GCompare b) => GCompare (a :*: b) where
+    gcompare (x :*: y) (x' :*: y') = case gcompare x x' of
+        GLT -> GLT
+        GGT -> GGT
+        GEQ -> case gcompare y y' of
+            GLT -> GLT
+            GEQ -> GEQ
+            GGT -> GGT
+#endif
 
 -------------------------------------------------------------------------------
 -- Some
