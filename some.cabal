@@ -1,7 +1,5 @@
 name:               some
-version:            1.0.3
-x-revision:         2
-stability:          provisional
+version:            1.0.4
 cabal-version:      >=1.10
 build-type:         Simple
 author:

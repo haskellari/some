@@ -1,3 +1,10 @@
+# 1.0.4
+
+- Add instances for `(:~~:)`
+- Add instances for `:+:` and `:*:`
+- Add `defaultGeq :: GCompare f => f a -> f b -> Maybe (a :~: b)`
+- Add `defaultGshowsPrec :: Show (t a) => Int -> t a -> ShowS`
+
 # 1.0.3
 
 - Make `GNFData` PolyKinded.
