@@ -39,7 +39,8 @@ tested-with:
    || ==8.8.4
    || ==8.10.4
    || ==9.0.1
-   || ==9.2.1
+   || ==9.2.3
+   || ==9.4.1
 
 extra-source-files: ChangeLog.md
 

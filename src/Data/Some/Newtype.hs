@@ -47,6 +47,7 @@ import Data.GADT.Show
 
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs
+-- >>> import Data.GADT.Show
 
 -- | Existential. This is type is useful to hide GADTs' parameters.
 --

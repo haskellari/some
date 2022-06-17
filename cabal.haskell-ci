@@ -1,4 +1,5 @@
 branches : master
+docspec: >=8.2
 
 constraint-set safe
   constraints: some -newtype-unsafe
