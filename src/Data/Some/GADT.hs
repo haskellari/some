@@ -1,20 +1,12 @@
 {-# LANGUAGE CPP         #-}
 {-# LANGUAGE GADTs       #-}
 {-# LANGUAGE RankNTypes  #-}
-#if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds   #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 708
 {-# LANGUAGE RoleAnnotations #-}
-#endif
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
-#if __GLASGOW_HASKELL__ >= 704
 {-# LANGUAGE Safe        #-}
-#elif __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy #-}
-#endif
 module Data.Some.GADT (
     Some(Some),
     mkSome,
@@ -91,9 +83,7 @@ type Some :: (k -> Type) -> Type
 data Some tag where
     Some :: tag a -> Some tag
 
-#if __GLASGOW_HASKELL__ >= 708
 type role Some representational
-#endif
 
 -- | Constructor.
 mkSome :: tag a -> Some tag

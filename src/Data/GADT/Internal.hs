@@ -1,26 +1,25 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE GADTs               #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
-#if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds           #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 708
 {-# LANGUAGE RoleAnnotations #-}
-#endif
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
 #if __GLASGOW_HASKELL__ >= 800 && __GLASGOW_HASKELL__ < 805
 {-# LANGUAGE TypeInType #-}
 #endif
-#if (__GLASGOW_HASKELL__ >= 704 && __GLASGOW_HASKELL__ < 707) || __GLASGOW_HASKELL__ >= 801
-{-# LANGUAGE Safe #-}
-#elif __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy         #-}
-#endif
+{-# LANGUAGE StandaloneDeriving  #-}
+{-# LANGUAGE Safe                #-}
+
+-- For GShow
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Data.GADT.Internal where
 
 import Control.Applicative  (Applicative (..))
@@ -34,9 +33,7 @@ import Data.Type.Equality   ((:~:) (..))
 import GHC.Generics         ((:+:) (..), (:*:) (..))
 #endif
 
-#if __GLASGOW_HASKELL__ >=708
 import Data.Typeable (Typeable)
-#endif
 
 #if MIN_VERSION_base(4,9,0)
 #if MIN_VERSION_base(4,10,0)
@@ -59,6 +56,7 @@ import Data.Kind (Type)
 import Data.Kind (Constraint)
 #endif
 
+{-# DEPRECATED GShow "Just use the underlying quantified constraint" #-}
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs -XTypeOperators
 -- >>> import Data.Type.Equality
@@ -69,12 +67,12 @@ import Data.Kind (Constraint)
 -- like @(forall a. Show (t a)) => ...@.  The easiest way to create instances would probably be
 -- to write (or derive) an @instance Show (T a)@, and then simply say:
 --
--- > instance GShow t where gshowsPrec = defaultGshowsPrec
-#if __GLASGOW_HASKELL__ >= 810
-type GShow :: (k -> Type) -> Constraint
-#endif
-class GShow t where
-    gshowsPrec :: Int -> t a -> ShowS
+-- > instance GShow t
+class    (forall a. Show (t a)) => GShow t
+instance (forall a. Show (t a)) => GShow t
+
+gshowsPrec :: GShow t => Int -> t a -> ShowS
+gshowsPrec = showsPrec
 
 -- |If 'f' has a 'Show (f a)' instance, this function makes a suitable default
 -- implementation of 'gshowsPrec'.
@@ -88,59 +86,6 @@ gshows = gshowsPrec (-1)
 
 gshow :: (GShow t) => t a -> String
 gshow x = gshows x ""
-
-instance GShow ((:~:) a) where
-    gshowsPrec _ Refl = showString "Refl"
-
-#if MIN_VERSION_base(4,9,0)
--- | @since 1.0.4
-instance GShow ((:~~:) a) where
-    gshowsPrec _ HRefl = showString "HRefl"
-#endif
-
-#if MIN_VERSION_base(4,10,0)
-instance GShow TR.TypeRep where
-    gshowsPrec = showsPrec
-#endif
-
---
--- | >>> gshow (InL Refl :: Sum ((:~:) Int) ((:~:) Bool) Int)
--- "InL Refl"
-instance (GShow a, GShow b) => GShow (Sum a b) where
-    gshowsPrec d = \s -> case s of
-        InL x -> showParen (d > 10) (showString "InL " . gshowsPrec 11 x)
-        InR x -> showParen (d > 10) (showString "InR " . gshowsPrec 11 x)
-
--- | >>> gshow (Pair Refl Refl :: Product ((:~:) Int) ((:~:) Int) Int)
--- "Pair Refl Refl"
-instance (GShow a, GShow b) => GShow (Product a b) where
-    gshowsPrec d (Pair x y) = showParen (d > 10)
-        $ showString "Pair "
-        . gshowsPrec 11 x
-        . showChar ' '
-        . gshowsPrec 11 y
-
-#if MIN_VERSION_base(4,6,0)
---
--- | >>> gshow (L1 Refl :: ((:~:) Int :+: (:~:) Bool) Int)
--- "L1 Refl"
---
--- @since 1.0.4
-instance (GShow a, GShow b) => GShow (a :+: b) where
-    gshowsPrec d = \s -> case s of
-        L1 x -> showParen (d > 10) (showString "L1 " . gshowsPrec 11 x)
-        R1 x -> showParen (d > 10) (showString "R1 " . gshowsPrec 11 x)
-
--- | >>> gshow (Pair Refl Refl :: Product ((:~:) Int) ((:~:) Int) Int)
--- "Refl :*: Refl"
---
--- @since 1.0.4
-instance (GShow a, GShow b) => GShow (a :*: b) where
-    gshowsPrec d (x :*: y) = showParen (d > 6)
-        $ gshowsPrec 6 x
-        . showString " :*: "
-        . gshowsPrec 6 y
-#endif
 
 -- |@GReadS t@ is equivalent to @ReadS (forall b. (forall a. t a -> b) -> b)@, which is
 -- in turn equivalent to @ReadS (Exists t)@ (with @data Exists t where Exists :: t a -> Exists t@)
@@ -163,6 +108,9 @@ type GRead :: (k -> Type) -> Constraint
 #endif
 class GRead t where
     greadsPrec :: Int -> GReadS t
+
+-- (forall a. Read (t a)) =>
+-- Skipping because it is rather misleading to use.
 
 greads :: GRead t => GReadS t
 greads = greadsPrec (-1)
@@ -240,7 +188,7 @@ instance (GRead a, GRead b) => GRead (a :+: b) where
 #if __GLASGOW_HASKELL__ >= 810
 type GEq :: (k -> Type) -> Constraint
 #endif
-class GEq f where
+class (forall a. Eq (f a)) => GEq f where
     -- |Produce a witness of type-equality, if one exists.
     --
     -- A handy idiom for using this would be to pattern-bind in the Maybe monad, eg.:
@@ -357,9 +305,21 @@ data GOrdering a b where
     GLT :: GOrdering a b
     GEQ :: GOrdering t t
     GGT :: GOrdering a b
-#if __GLASGOW_HASKELL__ >=708
   deriving Typeable
-#endif
+
+deriving instance Eq   (GOrdering a b)
+deriving instance Ord  (GOrdering a b)
+deriving instance Show (GOrdering a b)
+
+{-
+instance Read (GOrdering a b) where
+    readsPrec _ s = case con of
+        "GGT"   -> [(GGT, rest)]
+        "GEQ"   -> [] -- cannot read without evidence of equality
+        "GLT"   -> [(GLT, rest)]
+        _       -> []
+        where (con, rest) = splitAt 3 s
+-}
 
 -- |TODO: Think of a better name
 --
@@ -368,20 +328,6 @@ weakenOrdering :: GOrdering a b -> Ordering
 weakenOrdering GLT = LT
 weakenOrdering GEQ = EQ
 weakenOrdering GGT = GT
-
-instance Eq (GOrdering a b) where
-    x == y = weakenOrdering x == weakenOrdering y
-
-instance Ord (GOrdering a b) where
-    compare x y = compare (weakenOrdering x) (weakenOrdering y)
-
-instance Show (GOrdering a b) where
-    showsPrec _ GGT = showString "GGT"
-    showsPrec _ GEQ = showString "GEQ"
-    showsPrec _ GLT = showString "GLT"
-
-instance GShow (GOrdering a) where
-    gshowsPrec = showsPrec
 
 instance GRead (GOrdering a) where
     greadsPrec _ s = case con of
@@ -396,7 +342,7 @@ instance GRead (GOrdering a) where
 #if __GLASGOW_HASKELL__ >= 810
 type GCompare :: (k -> Type) -> Constraint
 #endif
-class GEq f => GCompare f where
+class (GEq f, forall a. Ord (f a)) => GCompare f where
     gcompare :: f a -> f b -> GOrdering a b
 
 instance GCompare ((:~:) a) where
@@ -513,9 +459,7 @@ newtype Some tag = S
       withSome :: forall r. (forall a. tag a -> r) -> r
     }
 
-#if __GLASGOW_HASKELL__ >= 708
 type role Some representational
-#endif
 
 -- | Constructor.
 mkSome :: tag a -> Some tag
