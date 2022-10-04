@@ -1,3 +1,7 @@
+# 1.0.4.1
+
+- Drop support for GHC before 8.6
+
 # 1.0.4
 
 - Add instances for `(:~~:)`

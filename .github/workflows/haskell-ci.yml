@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.20220808
+# version: 0.15.20220826
 #
-# REGENDATA ("0.15.20220808",["github","cabal.project"])
+# REGENDATA ("0.15.20220826",["github","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,9 +32,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.4.1
+          - compiler: ghc-9.4.2
             compilerKind: ghc
-            compilerVersion: 9.4.1
+            compilerVersion: 9.4.2
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.2.4
@@ -42,10 +42,10 @@ jobs:
             compilerVersion: 9.2.4
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.0.1
+          - compiler: ghc-9.0.2
             compilerKind: ghc
-            compilerVersion: 9.0.1
-            setup-method: hvr-ppa
+            compilerVersion: 9.0.2
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.10.4
             compilerKind: ghc
@@ -60,51 +60,6 @@ jobs:
           - compiler: ghc-8.6.5
             compilerKind: ghc
             compilerVersion: 8.6.5
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.4.4
-            compilerKind: ghc
-            compilerVersion: 8.4.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.2.2
-            compilerKind: ghc
-            compilerVersion: 8.2.2
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-8.0.2
-            compilerKind: ghc
-            compilerVersion: 8.0.2
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.10.3
-            compilerKind: ghc
-            compilerVersion: 7.10.3
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.8.4
-            compilerKind: ghc
-            compilerVersion: 7.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.6.3
-            compilerKind: ghc
-            compilerVersion: 7.6.3
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.4.2
-            compilerKind: ghc
-            compilerVersion: 7.4.2
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.2.2
-            compilerKind: ghc
-            compilerVersion: 7.2.2
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.0.4
-            compilerKind: ghc
-            compilerVersion: 7.0.4
             setup-method: hvr-ppa
             allow-failure: false
       fail-fast: false
@@ -242,8 +197,8 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_some}" >> cabal.project
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package some" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
+          echo "package some" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(some)$/; }' >> cabal.project.local
@@ -274,8 +229,8 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: docspec
         run: |
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all ; fi
-          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then cabal-docspec $ARG_COMPILER ; fi
+          $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all
+          cabal-docspec $ARG_COMPILER
       - name: cabal check
         run: |
           cd ${PKGDIR_some} || false

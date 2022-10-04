@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP           #-}
 {-# LANGUAGE GADTs         #-}
 {-# LANGUAGE RankNTypes    #-}
 {-# LANGUAGE TypeOperators #-}
@@ -22,13 +21,8 @@ gadt_ftraverse_ k tf = case ffoldMap (G.Some . k) tf of
   G.Some mx -> () <$ mx
 
 newtype_ftraverse_ :: (FFoldable t, Applicative m) => (forall a. f a -> m b) -> t f -> m ()
-#if __GLASGOW_HASKELL__ >= 801
 newtype_ftraverse_ k tf = case ffoldMap (N.Some . k) tf of
   N.Some mx -> () <$ mx
-#else
-newtype_ftraverse_ k tf = N.withSome (ffoldMap (N.mkSome . k) tf) $
-  \mx -> () <$ mx
-#endif
 
 church_ftraverse_ :: (FFoldable t, Applicative m) => (forall a. f a -> m b) -> t f -> m ()
 church_ftraverse_ k tf = C.withSome (ffoldMap (C.mkSome . k) tf) $
