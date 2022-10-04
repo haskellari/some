@@ -1,59 +1,27 @@
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators       #-}
-#if __GLASGOW_HASKELL__ >= 706
-{-# LANGUAGE PolyKinds           #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 708
-{-# LANGUAGE RoleAnnotations #-}
-#endif
+{-# LANGUAGE CPP                      #-}
+{-# LANGUAGE GADTs                    #-}
+{-# LANGUAGE PolyKinds                #-}
+{-# LANGUAGE RankNTypes               #-}
+{-# LANGUAGE RoleAnnotations          #-}
+{-# LANGUAGE Safe                     #-}
+{-# LANGUAGE ScopedTypeVariables      #-}
+{-# LANGUAGE TypeOperators            #-}
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 800 && __GLASGOW_HASKELL__ < 805
-{-# LANGUAGE TypeInType #-}
-#endif
-#if (__GLASGOW_HASKELL__ >= 704 && __GLASGOW_HASKELL__ < 707) || __GLASGOW_HASKELL__ >= 801
-{-# LANGUAGE Safe #-}
-#elif __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy         #-}
 #endif
 module Data.GADT.Internal where
 
 import Control.Applicative  (Applicative (..))
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum     (Sum (..))
+import Data.Kind            (Type)
 import Data.Maybe           (isJust, isNothing)
 import Data.Monoid          (Monoid (..))
 import Data.Semigroup       (Semigroup (..))
-import Data.Type.Equality   ((:~:) (..))
-#if MIN_VERSION_base(4,6,0)
-import GHC.Generics         ((:+:) (..), (:*:) (..))
-#endif
+import Data.Type.Equality   (testEquality, (:~:) (..), (:~~:) (..))
+import GHC.Generics         ((:*:) (..), (:+:) (..))
 
-#if __GLASGOW_HASKELL__ >=708
-import Data.Typeable (Typeable)
-#endif
-
-#if MIN_VERSION_base(4,9,0)
-#if MIN_VERSION_base(4,10,0)
-import  Data.Type.Equality ((:~~:) (..))
-#else
-import  Data.Type.Equality.Hetero ((:~~:) (..))
-#endif
-#endif
-
-#if MIN_VERSION_base(4,10,0)
-import           Data.Type.Equality (testEquality)
-import qualified Type.Reflection    as TR
-#endif
-
-#if __GLASGOW_HASKELL__ >= 800
-import Data.Kind (Type)
-#endif
+import qualified Type.Reflection as TR
 
 #if __GLASGOW_HASKELL__ >= 810
 import Data.Kind (Constraint)
@@ -92,16 +60,12 @@ gshow x = gshows x ""
 instance GShow ((:~:) a) where
     gshowsPrec _ Refl = showString "Refl"
 
-#if MIN_VERSION_base(4,9,0)
 -- | @since 1.0.4
 instance GShow ((:~~:) a) where
     gshowsPrec _ HRefl = showString "HRefl"
-#endif
 
-#if MIN_VERSION_base(4,10,0)
 instance GShow TR.TypeRep where
     gshowsPrec = showsPrec
-#endif
 
 --
 -- | >>> gshow (InL Refl :: Sum ((:~:) Int) ((:~:) Bool) Int)
@@ -120,7 +84,6 @@ instance (GShow a, GShow b) => GShow (Product a b) where
         . showChar ' '
         . gshowsPrec 11 y
 
-#if MIN_VERSION_base(4,6,0)
 --
 -- | >>> gshow (L1 Refl :: ((:~:) Int :+: (:~:) Bool) Int)
 -- "L1 Refl"
@@ -140,7 +103,6 @@ instance (GShow a, GShow b) => GShow (a :*: b) where
         $ gshowsPrec 6 x
         . showString " :*: "
         . gshowsPrec 6 y
-#endif
 
 -- |@GReadS t@ is equivalent to @ReadS (forall b. (forall a. t a -> b) -> b)@, which is
 -- in turn equivalent to @ReadS (Exists t)@ (with @data Exists t where Exists :: t a -> Exists t@)
@@ -194,14 +156,12 @@ instance GRead ((:~:) a) where
         | ("Refl", t) <- lex s
         ])
 
-#if MIN_VERSION_base(4,9,0)
 -- | @since 1.0.4
 instance k1 ~ k2 => GRead ((:~~:) (a :: k1) :: k2 -> Type) where
     greadsPrec _ = readParen False (\s ->
         [ (S $ \k -> k (HRefl :: a :~~: a), t)
         | ("HRefl", t) <- lex s
         ])
-#endif
 
 instance (GRead a, GRead b) => GRead (Sum a b) where
     greadsPrec d s =
@@ -215,7 +175,6 @@ instance (GRead a, GRead b) => GRead (Sum a b) where
                     | ("InR", s2) <- lex s1
                     , (r, t) <- greadsPrec 11 s2 ]) s
 
-#if MIN_VERSION_base(4,6,0)
 -- | @since 1.0.4
 instance (GRead a, GRead b) => GRead (a :+: b) where
     greadsPrec d s =
@@ -228,7 +187,6 @@ instance (GRead a, GRead b) => GRead (a :+: b) where
             (\s1 -> [ (S $ \k -> withSome r (k . R1), t)
                     | ("R1", s2) <- lex s1
                     , (r, t) <- greadsPrec 11 s2 ]) s
-#endif
 
 -------------------------------------------------------------------------------
 -- GEq
@@ -280,11 +238,9 @@ defaultNeq x y = isNothing (geq x y)
 instance GEq ((:~:) a) where
     geq (Refl :: a :~: b) (Refl :: a :~: c) = Just (Refl :: b :~: c)
 
-#if MIN_VERSION_base(4,9,0)
 -- | @since 1.0.4
 instance GEq ((:~~:) a) where
     geq (HRefl :: a :~~: b) (HRefl :: a :~~: c) = Just (Refl :: b :~: c)
-#endif
 
 instance (GEq a, GEq b) => GEq (Sum a b) where
     geq (InL x) (InL y) = geq x y
@@ -297,7 +253,6 @@ instance (GEq a, GEq b) => GEq (Product a b) where
         Refl <- geq y y'
         return Refl
 
-#if MIN_VERSION_base(4,6,0)
 -- | @since 1.0.4
 instance (GEq f, GEq g) => GEq (f :+: g) where
   geq (L1 x) (L1 y) = geq x y
@@ -310,12 +265,9 @@ instance (GEq a, GEq b) => GEq (a :*: b) where
         Refl <- geq x x'
         Refl <- geq y y'
         return Refl
-#endif
 
-#if MIN_VERSION_base(4,10,0)
 instance GEq TR.TypeRep where
     geq = testEquality
-#endif
 
 -------------------------------------------------------------------------------
 -- GCompare
@@ -357,9 +309,6 @@ data GOrdering a b where
     GLT :: GOrdering a b
     GEQ :: GOrdering t t
     GGT :: GOrdering a b
-#if __GLASGOW_HASKELL__ >=708
-  deriving Typeable
-#endif
 
 -- |TODO: Think of a better name
 --
@@ -402,13 +351,10 @@ class GEq f => GCompare f where
 instance GCompare ((:~:) a) where
     gcompare Refl Refl = GEQ
 
-#if MIN_VERSION_base(4,9,0)
 -- | @since 1.0.4
 instance GCompare ((:~~:) a) where
     gcompare HRefl HRefl = GEQ
-#endif
 
-#if MIN_VERSION_base(4,10,0)
 instance GCompare TR.TypeRep where
     gcompare t1 t2 =
       case testEquality t1 t2 of
@@ -420,7 +366,6 @@ instance GCompare TR.TypeRep where
             EQ -> error "impossible: 'testEquality' and 'compare' \
                         \are inconsistent for TypeRep; report this \
                         \as a GHC bug"
-#endif
 
 defaultCompare :: GCompare f => f a -> f b -> Ordering
 defaultCompare x y = weakenOrdering (gcompare x y)
@@ -440,7 +385,6 @@ instance (GCompare a, GCompare b) => GCompare (Product a b) where
             GEQ -> GEQ
             GGT -> GGT
 
-#if MIN_VERSION_base(4,6,0)
 -- | @since 1.0.4
 instance (GCompare f, GCompare g) => GCompare (f :+: g) where
     gcompare (L1 x) (L1 y) = gcompare x y
@@ -457,7 +401,6 @@ instance (GCompare a, GCompare b) => GCompare (a :*: b) where
             GLT -> GLT
             GEQ -> GEQ
             GGT -> GGT
-#endif
 
 -------------------------------------------------------------------------------
 -- Some
@@ -513,9 +456,7 @@ newtype Some tag = S
       withSome :: forall r. (forall a. tag a -> r) -> r
     }
 
-#if __GLASGOW_HASKELL__ >= 708
 type role Some representational
-#endif
 
 -- | Constructor.
 mkSome :: tag a -> Some tag

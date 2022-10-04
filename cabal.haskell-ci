@@ -1,5 +1,5 @@
-branches : master
-docspec: >=8.2
+branches: master
+docspec:  True
 
 constraint-set safe
   constraints: some -newtype-unsafe

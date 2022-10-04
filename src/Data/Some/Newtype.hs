@@ -1,27 +1,15 @@
 {-# LANGUAGE CPP             #-}
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE RankNTypes      #-}
-#if __GLASGOW_HASKELL__ >= 801
 {-# LANGUAGE PatternSynonyms #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 708
 {-# LANGUAGE RoleAnnotations #-}
-#endif
-#if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE PolyKinds       #-}
-#endif
+{-# LANGUAGE Trustworthy     #-}
 #if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
 #endif
-#if __GLASGOW_HASKELL__ >= 702
-{-# LANGUAGE Trustworthy     #-}
-#endif
 module Data.Some.Newtype (
-#if __GLASGOW_HASKELL__ >= 801
     Some(Some),
-#else
-    Some,
-#endif
     mkSome,
     withSome,
     withSomeM,
@@ -96,23 +84,12 @@ type Some :: (k -> Type) -> Type
 #endif
 newtype Some tag = UnsafeSome (tag Any)
 
-#if __GLASGOW_HASKELL__ >= 708
 type role Some representational
-#endif
  
-#if __GLASGOW_HASKELL__ >= 801
 {-# COMPLETE Some #-}
 pattern Some :: tag a -> Some tag
-#if __GLASGOW_HASKELL__ >= 802
 pattern Some x <- UnsafeSome x
   where Some x = UnsafeSome ((unsafeCoerce :: tag a -> tag Any) x)
-#else
--- There was a bug type checking pattern synonyms that prevented the
--- obvious thing from working.
-pattern Some x <- UnsafeSome ((unsafeCoerce :: tag Any -> tag a) -> x)
-  where Some x = UnsafeSome ((unsafeCoerce :: tag a -> tag Any) x)
-#endif
-#endif
 
 -- | Constructor.
 mkSome :: tag a -> Some tag
