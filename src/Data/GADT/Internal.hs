@@ -18,7 +18,7 @@ import Data.Kind            (Type)
 import Data.Maybe           (isJust, isNothing)
 import Data.Monoid          (Monoid (..))
 import Data.Semigroup       (Semigroup (..))
-import Data.Type.Equality   (testEquality, (:~:) (..), (:~~:) (..))
+import Data.Type.Equality   (TestEquality (..), (:~:) (..), (:~~:) (..))
 import GHC.Generics         ((:*:) (..), (:+:) (..))
 
 import qualified Type.Reflection as TR
@@ -28,9 +28,10 @@ import Data.Kind (Constraint)
 #endif
 
 -- $setup
--- >>> :set -XKindSignatures -XGADTs -XTypeOperators
+-- >>> :set -XKindSignatures -XGADTs -XTypeOperators -XStandaloneDeriving -XQuantifiedConstraints
 -- >>> import Data.Type.Equality
 -- >>> import Data.Functor.Sum
+-- >>> import Data.Maybe (isJust, isNothing)
 -- >>> import GHC.Generics
 
 -- |'Show'-like class for 1-type-parameter GADTs.  @GShow t => ...@ is equivalent to something
@@ -195,6 +196,75 @@ instance (GRead a, GRead b) => GRead (a :+: b) where
 -- |A class for type-contexts which contain enough information
 -- to (at least in some cases) decide the equality of types
 -- occurring within them.
+--
+-- This class is sometimes confused with 'TestEquality' from base.
+-- 'TestEquality' only checks /type equality/.
+--
+-- Consider
+--
+-- >>> data Tag a where TagInt1 :: Tag Int; TagInt2 :: Tag Int
+--
+-- The correct @'TestEquality' Tag@ instance is
+--
+-- >>> :{
+-- instance TestEquality Tag where
+--     testEquality TagInt1 TagInt1 = Just Refl
+--     testEquality TagInt1 TagInt2 = Just Refl
+--     testEquality TagInt2 TagInt1 = Just Refl
+--     testEquality TagInt2 TagInt2 = Just Refl
+-- :}
+--
+-- While we can define
+--
+-- @
+-- instance 'GEq' Tag where
+--    'geq' = 'testEquality'
+-- @
+--
+-- this will mean we probably want to have
+--
+-- @
+-- instance 'Eq' Tag where
+--    _ '==' _ = True
+-- @
+--
+-- /Note:/ In the future version of @some@ package (to be released around GHC-9.6 / 9.8) the
+-- @forall a. Eq (f a)@ constraint will be added as a constraint to 'GEq',
+-- with a law relating 'GEq' and 'Eq':
+--
+-- @
+-- 'geq' x y = Just Refl   ⇒  x == y = True        ∀ (x :: f a) (y :: f b)
+-- x == y                ≡  isJust ('geq' x y)     ∀ (x, y :: f a)
+-- @
+--
+-- So, the more useful @'GEq' Tag@ instance would differentiate between
+-- different constructors:
+--
+-- >>> :{
+-- instance GEq Tag where
+--     geq TagInt1 TagInt1 = Just Refl
+--     geq TagInt1 TagInt2 = Nothing
+--     geq TagInt2 TagInt1 = Nothing
+--     geq TagInt2 TagInt2 = Just Refl
+-- :}
+--
+-- which is consistent with a derived 'Eq' instance for 'Tag'
+--
+-- >>> deriving instance Eq (Tag a)
+--
+-- Note that even if @a ~ b@, the @'geq' (x :: f a) (y :: f b)@ may
+-- be 'Nothing' (when value terms are inequal).
+--
+-- The consistency of 'GEq' and 'Eq' is easy to check by exhaustion:
+--
+-- >>> let checkFwdGEq :: (forall a. Eq (f a), GEq f) => f a -> f b -> Bool; checkFwdGEq x y = case geq x y of Just Refl -> x == y; Nothing -> True
+-- >>> (checkFwdGEq TagInt1 TagInt1, checkFwdGEq TagInt1 TagInt2, checkFwdGEq TagInt2 TagInt1, checkFwdGEq TagInt2 TagInt2)
+-- (True,True,True,True)
+--
+-- >>> let checkBwdGEq :: (Eq (f a), GEq f) => f a -> f a -> Bool; checkBwdGEq x y = if x == y then isJust (geq x y) else isNothing (geq x y)
+-- >>> (checkBwdGEq TagInt1 TagInt1, checkBwdGEq TagInt1 TagInt2, checkBwdGEq TagInt2 TagInt1, checkBwdGEq TagInt2 TagInt2)
+-- (True,True,True,True)
+--
 #if __GLASGOW_HASKELL__ >= 810
 type GEq :: (k -> Type) -> Constraint
 #endif
