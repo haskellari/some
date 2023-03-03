@@ -42,7 +42,7 @@ flag newtype-unsafe
 
 source-repository head
   type:     git
-  location: git://github.com/haskellari/some.git
+  location: https://github.com/haskellari/some.git
   subdir:   some
 
 library
