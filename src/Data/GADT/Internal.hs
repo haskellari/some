@@ -27,6 +27,11 @@ import qualified Type.Reflection as TR
 import Data.Kind (Constraint)
 #endif
 
+#if MIN_VERSION_base(4,18,0)
+import qualified GHC.TypeLits as TL
+import qualified GHC.TypeNats as TN
+#endif
+
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs -XTypeOperators -XStandaloneDeriving -XQuantifiedConstraints
 -- >>> import Data.Type.Equality
@@ -67,6 +72,17 @@ instance GShow ((:~~:) a) where
 
 instance GShow TR.TypeRep where
     gshowsPrec = showsPrec
+
+#if MIN_VERSION_base(4,18,0)
+instance GShow TL.SChar where
+    gshowsPrec = showsPrec
+
+instance GShow TL.SSymbol where
+    gshowsPrec = showsPrec
+
+instance GShow TN.SNat where
+    gshowsPrec = showsPrec
+#endif
 
 --
 -- | >>> gshow (InL Refl :: Sum ((:~:) Int) ((:~:) Bool) Int)
@@ -339,6 +355,17 @@ instance (GEq a, GEq b) => GEq (a :*: b) where
 instance GEq TR.TypeRep where
     geq = testEquality
 
+#if MIN_VERSION_base(4,18,0)
+instance GEq TL.SChar where
+    geq = testEquality
+
+instance GEq TL.SSymbol where
+    geq = testEquality
+
+instance GEq TN.SNat where
+    geq = testEquality
+#endif
+
 -------------------------------------------------------------------------------
 -- GCompare
 -------------------------------------------------------------------------------
@@ -426,19 +453,41 @@ instance GCompare ((:~~:) a) where
     gcompare HRefl HRefl = GEQ
 
 instance GCompare TR.TypeRep where
-    gcompare t1 t2 =
-      case testEquality t1 t2 of
-        Just Refl -> GEQ
-        Nothing ->
-          case compare (TR.SomeTypeRep t1) (TR.SomeTypeRep t2) of
-            LT -> GLT
-            GT -> GGT
-            EQ -> error "impossible: 'testEquality' and 'compare' \
-                        \are inconsistent for TypeRep; report this \
-                        \as a GHC bug"
+    gcompare = gcompareSing "TypeRep" TR.SomeTypeRep
+
+#if MIN_VERSION_base(4,18,0)
+instance GCompare TL.SChar where
+    gcompare = gcompareSing "SChar" TL.fromSChar
+
+instance GCompare TL.SSymbol where
+    gcompare = gcompareSing "SSymbol" TL.fromSSymbol
+
+instance GCompare TN.SNat where
+    gcompare = gcompareSing "SNat" TN.fromSNat
+#endif
 
 defaultCompare :: GCompare f => f a -> f b -> Ordering
 defaultCompare x y = weakenOrdering (gcompare x y)
+
+-- | An implementation of 'gcompare' for a singleton type.
+gcompareSing :: (TestEquality f, Ord c)
+             => String
+             -- ^ The name of the singleton type.
+             -- (Only used for error message purposes.)
+             -> (forall x. f x -> c)
+             -- ^ How to turn the singleton type into a value that can be
+             -- compared with 'Ord'.
+             -> f a -> f b -> GOrdering a b
+gcompareSing singName toOrd t1 t2 =
+  case testEquality t1 t2 of
+    Just Refl -> GEQ
+    Nothing ->
+      case compare (toOrd t1) (toOrd t2) of
+        LT -> GLT
+        GT -> GGT
+        EQ -> error $ "impossible: 'testEquality' and 'compare' are inconsistent for "
+                   ++ singName
+                   ++ "; report this as a GHC bug"
 
 instance (GCompare a, GCompare b) => GCompare (Sum a b) where
     gcompare (InL x) (InL y) = gcompare x y

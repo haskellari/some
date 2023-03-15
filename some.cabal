@@ -72,6 +72,10 @@ library
       base     >=4.12    && <4.20
     , deepseq  >=1.4.4.0 && <1.6
 
+  if !impl(ghc >= 9.8)
+    build-depends:
+      base-orphans >= 0.9.1 && <0.10
+
   if impl(ghc >=9.0)
     -- these flags may abort compilation with GHC-8.10
     -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3295
