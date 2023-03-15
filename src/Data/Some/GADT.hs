@@ -34,10 +34,11 @@ import Data.GADT.Show
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs
 -- >>> import Data.GADT.Show
+-- >>> import Data.Kind (Type)
 
 -- | Existential. This is type is useful to hide GADTs' parameters.
 --
--- >>> data Tag :: * -> * where TagInt :: Tag Int; TagBool :: Tag Bool
+-- >>> data Tag :: Type -> Type where TagInt :: Tag Int; TagBool :: Tag Bool
 -- >>> instance GShow Tag where gshowsPrec _ TagInt = showString "TagInt"; gshowsPrec _ TagBool = showString "TagBool"
 -- >>> classify s = case s of "TagInt" -> [mkGReadResult TagInt]; "TagBool" -> [mkGReadResult TagBool]; _ -> []
 -- >>> instance GRead Tag where greadsPrec _ s = [ (r, rest) | (con, rest) <-  lex s, r <- classify con ]
