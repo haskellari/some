@@ -61,8 +61,8 @@ library
 
   other-modules:    Data.GADT.Internal
   build-depends:
-      base     >=4.12    && <4.19
-    , deepseq  >=1.4.4.0 && <1.5
+      base     >=4.12    && <4.21
+    , deepseq  >=1.4.4.0 && <1.6
 
   if impl(ghc >=9.0)
     -- these flags may abort compilation with GHC-8.10
