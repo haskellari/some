@@ -1,5 +1,6 @@
 name:               some
 version:            1.0.5
+x-revision:         1
 cabal-version:      >=1.10
 build-type:         Simple
 author:
@@ -24,7 +25,14 @@ description:
   If you are unsure which variant to use, use the one in "Data.Some" module.
 
 tested-with:
-  GHC ==8.6.5 || ==8.8.4 || ==8.10.4 || ==9.0.2 || ==9.2.7|| ==9.4.4 || ==9.6.1
+  GHC ==8.6.5
+   || ==8.8.4
+   || ==8.10.4
+   || ==9.0.2
+   || ==9.2.8
+   || ==9.4.7
+   || ==9.6.3
+   || ==9.8.1
 
 extra-source-files: ChangeLog.md
 
@@ -61,8 +69,8 @@ library
 
   other-modules:    Data.GADT.Internal
   build-depends:
-      base     >=4.12    && <4.19
-    , deepseq  >=1.4.4.0 && <1.5
+      base     >=4.12    && <4.20
+    , deepseq  >=1.4.4.0 && <1.6
 
   if impl(ghc >=9.0)
     -- these flags may abort compilation with GHC-8.10
