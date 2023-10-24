@@ -20,6 +20,12 @@ import System.Mem.StableName (StableName, eqStableName)
 #if MIN_VERSION_base(4,18,0)
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum (Sum (..))
+import qualified GHC.TypeLits as TL
+import qualified GHC.TypeNats as TN
+#endif
+
+#if !MIN_VERSION_base(4,19,0)
+import Data.Orphans ()
 #endif
 
 import qualified Type.Reflection as TR
@@ -87,6 +93,17 @@ instance (EqP a, EqP b) => EqP (a :*: b) where
 
 instance EqP TR.TypeRep where
     eqp x y = TR.SomeTypeRep x == TR.SomeTypeRep y
+
+#if MIN_VERSION_base(4,18,0)
+instance EqP TL.SChar where
+    eqp x y = TL.fromSChar x == TL.fromSChar y
+
+instance EqP TL.SSymbol where
+    eqp x y = TL.fromSSymbol x == TL.fromSSymbol y
+
+instance EqP TN.SNat where
+    eqp x y = TN.fromSNat x == TN.fromSNat y
+#endif
 
 instance EqP Proxy where
     eqp _ _ = True

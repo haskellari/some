@@ -20,6 +20,12 @@ import GHC.Generics         ((:*:) (..), (:+:) (..))
 #if MIN_VERSION_base(4,18,0)
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum (Sum (..))
+import qualified GHC.TypeLits as TL
+import qualified GHC.TypeNats as TN
+#endif
+
+#if !MIN_VERSION_base(4,19,0)
+import Data.Orphans ()
 #endif
 
 import qualified Type.Reflection as TR
@@ -74,6 +80,17 @@ instance (OrdP a, OrdP b) => OrdP (a :*: b) where
 
 instance OrdP TR.TypeRep where
     comparep x y = compare (TR.SomeTypeRep x) (TR.SomeTypeRep y)
+
+#if MIN_VERSION_base(4,18,0)
+instance OrdP TL.SChar where
+    comparep x y = compare (TL.fromSChar x) (TL.fromSChar y)
+
+instance OrdP TL.SSymbol where
+    comparep x y = compare (TL.fromSSymbol x) (TL.fromSSymbol y)
+
+instance OrdP TN.SNat where
+    comparep x y = compare (TN.fromSNat x) (TN.fromSNat y)
+#endif
 
 instance OrdP Proxy where
     comparep _ _ = EQ
