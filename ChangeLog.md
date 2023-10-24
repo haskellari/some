@@ -1,3 +1,7 @@
+# 1.0.6
+
+- Add instances for `SSymbol`, `SNat` and `SChar` from `base >=4.18.0.0'
+
 # 1.0.5
 
 - Add EqP and OrdP classes.
