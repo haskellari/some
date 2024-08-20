@@ -61,6 +61,7 @@ library
     Data.EqP
     Data.GADT.Compare
     Data.GADT.DeepSeq
+    Data.GADT.Instances
     Data.GADT.Show
     Data.OrdP
     Data.Some.Church
