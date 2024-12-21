@@ -33,6 +33,7 @@ tested-with:
    || ==9.6.5
    || ==9.8.2
    || ==9.10.1
+   || ==9.12.1
 
 extra-source-files: ChangeLog.md
 
@@ -69,7 +70,7 @@ library
 
   other-modules:    Data.GADT.Internal
   build-depends:
-      base     >=4.12    && <4.21
+      base     >=4.12    && <4.22
     , deepseq  >=1.4.4.0 && <1.6
 
   if !impl(ghc >= 9.8)
