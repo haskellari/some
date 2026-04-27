@@ -1,36 +1,29 @@
-{-# LANGUAGE CPP                      #-}
 {-# LANGUAGE GADTs                    #-}
 {-# LANGUAGE PolyKinds                #-}
 {-# LANGUAGE RankNTypes               #-}
 {-# LANGUAGE RoleAnnotations          #-}
 {-# LANGUAGE Safe                     #-}
 {-# LANGUAGE ScopedTypeVariables      #-}
-{-# LANGUAGE TypeOperators            #-}
-#if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
-#endif
+{-# LANGUAGE TypeOperators            #-}
 module Data.GADT.Internal where
 
 import Control.Applicative  (Applicative (..))
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum     (Sum (..))
-import Data.Kind            (Type)
+import Data.Kind            (Constraint, Type)
 import Data.Maybe           (isJust, isNothing)
 import Data.Monoid          (Monoid (..))
 import Data.Semigroup       (Semigroup (..))
 import Data.Type.Equality   (TestEquality (..), (:~:) (..), (:~~:) (..))
 import GHC.Generics         ((:*:) (..), (:+:) (..))
 
+import Data.EqP
+import Data.OrdP
+
+import qualified GHC.TypeLits    as TL
+import qualified GHC.TypeNats    as TN
 import qualified Type.Reflection as TR
-
-#if __GLASGOW_HASKELL__ >= 810
-import Data.Kind (Constraint)
-#endif
-
-#if MIN_VERSION_base(4,18,0)
-import qualified GHC.TypeLits as TL
-import qualified GHC.TypeNats as TN
-#endif
 
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs -XTypeOperators -XStandaloneDeriving -XQuantifiedConstraints
@@ -44,9 +37,7 @@ import qualified GHC.TypeNats as TN
 -- to write (or derive) an @instance Show (T a)@, and then simply say:
 --
 -- > instance GShow t where gshowsPrec = defaultGshowsPrec
-#if __GLASGOW_HASKELL__ >= 810
 type GShow :: (k -> Type) -> Constraint
-#endif
 class GShow t where
     gshowsPrec :: Int -> t a -> ShowS
 
@@ -73,7 +64,6 @@ instance GShow ((:~~:) a) where
 instance GShow TR.TypeRep where
     gshowsPrec = showsPrec
 
-#if MIN_VERSION_base(4,18,0)
 instance GShow TL.SChar where
     gshowsPrec = showsPrec
 
@@ -82,7 +72,6 @@ instance GShow TL.SSymbol where
 
 instance GShow TN.SNat where
     gshowsPrec = showsPrec
-#endif
 
 --
 -- | >>> gshow (InL Refl :: Sum ((:~:) Int) ((:~:) Bool) Int)
@@ -123,9 +112,7 @@ instance (GShow a, GShow b) => GShow (a :*: b) where
 
 -- |@GReadS t@ is equivalent to @ReadS (forall b. (forall a. t a -> b) -> b)@, which is
 -- in turn equivalent to @ReadS (Exists t)@ (with @data Exists t where Exists :: t a -> Exists t@)
-#if __GLASGOW_HASKELL__ >= 810
 type GReadS :: (k -> Type) -> Type
-#endif
 type GReadS t = String -> [(Some t, String)]
 
 getGReadResult :: Some tag -> (forall a. tag a -> b) -> b
@@ -137,9 +124,7 @@ mkGReadResult = mkSome
 -- |'Read'-like class for 1-type-parameter GADTs.  Unlike 'GShow', this one cannot be
 -- mechanically derived from a 'Read' instance because 'greadsPrec' must choose the phantom
 -- type based on the 'String' being parsed.
-#if __GLASGOW_HASKELL__ >= 810
 type GRead :: (k -> Type) -> Constraint
-#endif
 class GRead t where
     greadsPrec :: Int -> GReadS t
 
@@ -281,10 +266,8 @@ instance (GRead a, GRead b) => GRead (a :+: b) where
 -- >>> (checkBwdGEq TagInt1 TagInt1, checkBwdGEq TagInt1 TagInt2, checkBwdGEq TagInt2 TagInt1, checkBwdGEq TagInt2 TagInt2)
 -- (True,True,True,True)
 --
-#if __GLASGOW_HASKELL__ >= 810
 type GEq :: (k -> Type) -> Constraint
-#endif
-class GEq f where
+class EqP f => GEq f where
     -- |Produce a witness of type-equality, if one exists.
     --
     -- A handy idiom for using this would be to pattern-bind in the Maybe monad, eg.:
@@ -355,7 +338,6 @@ instance (GEq a, GEq b) => GEq (a :*: b) where
 instance GEq TR.TypeRep where
     geq = testEquality
 
-#if MIN_VERSION_base(4,18,0)
 instance GEq TL.SChar where
     geq = testEquality
 
@@ -364,7 +346,6 @@ instance GEq TL.SSymbol where
 
 instance GEq TN.SNat where
     geq = testEquality
-#endif
 
 -------------------------------------------------------------------------------
 -- GCompare
@@ -399,9 +380,7 @@ instance GEq TN.SNat where
 -- |A type for the result of comparing GADT constructors; the type parameters
 -- of the GADT values being compared are included so that in the case where
 -- they are equal their parameter types can be unified.
-#if __GLASGOW_HASKELL__ >= 810
 type GOrdering :: k -> k -> Type
-#endif
 data GOrdering a b where
     GLT :: GOrdering a b
     GEQ :: GOrdering t t
@@ -439,10 +418,8 @@ instance GRead (GOrdering a) where
 
 -- |Type class for comparable GADT-like structures.  When 2 things are equal,
 -- must return a witness that their parameter types are equal as well ('GEQ').
-#if __GLASGOW_HASKELL__ >= 810
 type GCompare :: (k -> Type) -> Constraint
-#endif
-class GEq f => GCompare f where
+class (GEq f, OrdP f) => GCompare f where
     gcompare :: f a -> f b -> GOrdering a b
 
 instance GCompare ((:~:) a) where
@@ -455,7 +432,6 @@ instance GCompare ((:~~:) a) where
 instance GCompare TR.TypeRep where
     gcompare = gcompareSing "TypeRep" TR.SomeTypeRep
 
-#if MIN_VERSION_base(4,18,0)
 instance GCompare TL.SChar where
     gcompare = gcompareSing "SChar" TL.fromSChar
 
@@ -464,7 +440,6 @@ instance GCompare TL.SSymbol where
 
 instance GCompare TN.SNat where
     gcompare = gcompareSing "SNat" TN.fromSNat
-#endif
 
 defaultCompare :: GCompare f => f a -> f b -> Ordering
 defaultCompare x y = weakenOrdering (gcompare x y)
@@ -567,9 +542,7 @@ instance (GCompare a, GCompare b) => GCompare (a :*: b) where
 -- >>> read "mkSome TagInt" :: Some Tag
 -- mkSome TagInt
 --
-#if __GLASGOW_HASKELL__ >= 810
 type Some :: (k -> Type) -> Type
-#endif
 newtype Some tag = S
     { -- | Eliminator.
       withSome :: forall r. (forall a. tag a -> r) -> r
@@ -617,15 +590,15 @@ instance GRead f => Read (Some f) where
         , (withTag, rest') <- greadsPrec 11 rest
         ]
 
-instance GEq tag => Eq (Some tag) where
+instance EqP tag => Eq (Some tag) where
     x == y =
         withSome x $ \x' ->
-        withSome y $ \y' -> defaultEq x' y'
+        withSome y $ \y' -> eqp x' y'
 
-instance GCompare tag => Ord (Some tag) where
+instance OrdP tag => Ord (Some tag) where
     compare x y =
         withSome x $ \x' ->
-        withSome y $ \y' -> defaultCompare x' y'
+        withSome y $ \y' -> comparep x' y'
 
 instance Control.Applicative.Applicative m => Data.Semigroup.Semigroup (Some m) where
     m <> n =
