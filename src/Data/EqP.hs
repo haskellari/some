@@ -1,28 +1,24 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE Safe                  #-}
-{-# LANGUAGE TypeOperators         #-}
-#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE CPP                      #-}
+{-# LANGUAGE PolyKinds                #-}
+{-# LANGUAGE QuantifiedConstraints    #-}
+{-# LANGUAGE Safe                     #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-#endif
+{-# LANGUAGE TypeOperators            #-}
 module Data.EqP (
     EqP (..),
 ) where
 
 import Control.Applicative   (Const (..))
-import Data.Kind             (Type)
+import Data.Kind             (Constraint, Type)
 import Data.Proxy            (Proxy (..))
 import Data.Type.Equality    ((:~:) (..), (:~~:) (..))
 import GHC.Generics          ((:*:) (..), (:+:) (..))
 import System.Mem.StableName (StableName, eqStableName)
+import           Data.Functor.Product (Product (..))
+import           Data.Functor.Sum     (Sum (..))
 
-#if MIN_VERSION_base(4,18,0)
-import Data.Functor.Product (Product (..))
-import Data.Functor.Sum (Sum (..))
-import qualified GHC.TypeLits as TL
-import qualified GHC.TypeNats as TN
-#endif
+import qualified GHC.TypeLits         as TL
+import qualified GHC.TypeNats         as TN
 
 #if !MIN_VERSION_base(4,19,0)
 import Data.Orphans ()
@@ -30,9 +26,6 @@ import Data.Orphans ()
 
 import qualified Type.Reflection as TR
 
-#if __GLASGOW_HASKELL__ >= 810
-import Data.Kind (Constraint)
-#endif
 
 -- | Heterogenous lifted equality.
 --
@@ -60,9 +53,7 @@ import Data.Kind (Constraint)
 -- /Note:/ P stands for phantom.
 --
 -- @since 1.0.5
-#if __GLASGOW_HASKELL__ >= 810
 type EqP :: (k -> Type) -> Constraint
-#endif
 class (forall a. Eq (f a)) => EqP (f :: k -> Type) where
     eqp :: f a -> f b -> Bool
 
@@ -72,8 +63,6 @@ instance EqP ((:~:) a) where
 instance EqP ((:~~:) a) where
     eqp _ _ = True
 
-
-#if MIN_VERSION_base(4,18,0)
 instance (EqP a, EqP b) => EqP (Sum a b) where
     eqp (InL x) (InL y) = eqp x y
     eqp (InR x) (InR y) = eqp x y
@@ -81,7 +70,6 @@ instance (EqP a, EqP b) => EqP (Sum a b) where
 
 instance (EqP a, EqP b) => EqP (Product a b) where
     eqp (Pair x y) (Pair x' y') = eqp x x' && eqp y y'
-#endif
 
 instance (EqP f, EqP g) => EqP (f :+: g) where
     eqp (L1 x) (L1 y) = eqp x y
@@ -94,7 +82,6 @@ instance (EqP a, EqP b) => EqP (a :*: b) where
 instance EqP TR.TypeRep where
     eqp x y = TR.SomeTypeRep x == TR.SomeTypeRep y
 
-#if MIN_VERSION_base(4,18,0)
 instance EqP TL.SChar where
     eqp x y = TL.fromSChar x == TL.fromSChar y
 
@@ -103,7 +90,6 @@ instance EqP TL.SSymbol where
 
 instance EqP TN.SNat where
     eqp x y = TN.fromSNat x == TN.fromSNat y
-#endif
 
 instance EqP Proxy where
     eqp _ _ = True

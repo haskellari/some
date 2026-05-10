@@ -1,13 +1,10 @@
-{-# LANGUAGE CPP             #-}
-{-# LANGUAGE GADTs           #-}
-{-# LANGUAGE RankNTypes      #-}
-{-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RoleAnnotations #-}
-{-# LANGUAGE PolyKinds       #-}
-{-# LANGUAGE Trustworthy     #-}
-#if __GLASGOW_HASKELL__ >= 810
+{-# LANGUAGE GADTs                    #-}
+{-# LANGUAGE PatternSynonyms          #-}
+{-# LANGUAGE PolyKinds                #-}
+{-# LANGUAGE RankNTypes               #-}
+{-# LANGUAGE RoleAnnotations          #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-#endif
+{-# LANGUAGE Trustworthy              #-}
 module Data.Some.Newtype (
     Some(Some),
     mkSome,
@@ -20,18 +17,16 @@ module Data.Some.Newtype (
 
 import Control.Applicative (Applicative (..))
 import Control.DeepSeq     (NFData (..))
+import Data.Kind           (Type)
 import Data.Monoid         (Monoid (..))
 import Data.Semigroup      (Semigroup (..))
 import GHC.Exts            (Any)
 import Unsafe.Coerce       (unsafeCoerce)
 
-#if __GLASGOW_HASKELL__ >= 810
-import Data.Kind (Type)
-#endif
-
-import Data.GADT.Compare
+import Data.EqP
 import Data.GADT.DeepSeq
 import Data.GADT.Show
+import Data.OrdP
 
 -- $setup
 -- >>> :set -XKindSignatures -XGADTs
@@ -80,13 +75,11 @@ import Data.GADT.Show
 -- >>> read "mkSome TagInt" :: Some Tag
 -- Some TagInt
 --
-#if __GLASGOW_HASKELL__ >= 810
 type Some :: (k -> Type) -> Type
-#endif
 newtype Some tag = UnsafeSome (tag Any)
 
 type role Some representational
- 
+
 {-# COMPLETE Some #-}
 pattern Some :: tag a -> Some tag
 pattern Some x <- UnsafeSome x
@@ -132,15 +125,15 @@ instance GRead f => Read (Some f) where
         , (withTag, rest') <- greadsPrec 11 rest
         ]
 
-instance GEq tag => Eq (Some tag) where
+instance EqP tag => Eq (Some tag) where
     x == y =
         withSome x $ \x' ->
-        withSome y $ \y' -> defaultEq x' y'
+        withSome y $ \y' -> eqp x' y'
 
-instance GCompare tag => Ord (Some tag) where
+instance OrdP tag => Ord (Some tag) where
     compare x y =
         withSome x $ \x' ->
-        withSome y $ \y' -> defaultCompare x' y'
+        withSome y $ \y' -> comparep x' y'
 
 instance GNFData tag => NFData (Some tag) where
     rnf x = withSome x grnf

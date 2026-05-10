@@ -1,13 +1,12 @@
+cabal-version:      2.4
 name:               some
-version:            1.0.6
-x-revision:         3
-cabal-version:      >=1.10
+version:            1.1
 build-type:         Simple
 author:
   James Cook <mokus@deepbondi.net>, Oleg Grenrus <oleg.grenrus@iki.fi>
 
 maintainer:         Oleg Grenrus <oleg.grenrus@iki.fi>
-license:            BSD3
+license:            BSD-3-Clause
 license-file:       LICENSE
 homepage:           https://github.com/haskellari/some
 category:           Data, Dependent Types
@@ -25,19 +24,13 @@ description:
   If you are unsure which variant to use, use the one in "Data.Some" module.
 
 tested-with:
-  GHC ==8.6.5
-   || ==8.8.4
-   || ==8.10.4
-   || ==9.0.2
-   || ==9.2.8
-   || ==9.4.8
-   || ==9.6.7
+  GHC ==9.6.7
    || ==9.8.4
    || ==9.10.2
    || ==9.12.2
    || ==9.14.1
 
-extra-source-files: ChangeLog.md
+extra-doc-files: ChangeLog.md
 
 flag newtype-unsafe
   description:
@@ -72,20 +65,15 @@ library
 
   other-modules:    Data.GADT.Internal
   build-depends:
-      base     >=4.12    && <4.23
-    , deepseq  >=1.4.4.0 && <1.6
+      base     >=4.18    && <4.23
+    , deepseq  >=1.4.8.1 && <1.6
 
   if !impl(ghc >= 9.8)
     build-depends:
       base-orphans >= 0.9.1 && <0.10
 
-  if impl(ghc >=9.0)
-    -- these flags may abort compilation with GHC-8.10
-    -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/3295
-    ghc-options: -Winferred-safe-imports -Wmissing-safe-haskell-mode
-
-  if impl(ghc >=9.1)
-    ghc-options: -Wmissing-kind-signatures
+  ghc-options: -Winferred-safe-imports -Wmissing-safe-haskell-mode
+  ghc-options: -Wmissing-kind-signatures
 
 test-suite hkd-example
   default-language: Haskell2010

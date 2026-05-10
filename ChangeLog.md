@@ -1,3 +1,8 @@
+# 1.1
+
+- Add `EqP` as a superclass of `GEq`, and `OrdP` as a superclass of `GCompare`.
+- Relax `Eq` and `Ord` instances of `Some` to require just `EqP` and `OrdP`.
+
 # 1.0.6
 
 - Add instances for `SSymbol`, `SNat` and `SChar` from `base >=4.18.0.0'

@@ -1,12 +1,9 @@
-{-# LANGUAGE CPP                      #-}
 {-# LANGUAGE GADTs                    #-}
 {-# LANGUAGE PolyKinds                #-}
 {-# LANGUAGE RankNTypes               #-}
 {-# LANGUAGE RoleAnnotations          #-}
 {-# LANGUAGE Safe                     #-}
-#if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
-#endif
 module Data.Some.GADT (
     Some(Some),
     mkSome,
@@ -19,14 +16,12 @@ module Data.Some.GADT (
 
 import Control.Applicative (Applicative (..))
 import Control.DeepSeq     (NFData (..))
+import Data.Kind           (Type)
 import Data.Monoid         (Monoid (..))
 import Data.Semigroup      (Semigroup (..))
 
-#if __GLASGOW_HASKELL__ >= 810
-import Data.Kind (Type)
-#endif
-
-import Data.GADT.Compare
+import Data.EqP
+import Data.OrdP
 import Data.GADT.DeepSeq
 import Data.GADT.Show
 
@@ -78,9 +73,7 @@ import Data.GADT.Show
 -- >>> read "mkSome TagInt" :: Some Tag
 -- Some TagInt
 --
-#if __GLASGOW_HASKELL__ >= 810
 type Some :: (k -> Type) -> Type
-#endif
 data Some tag where
     Some :: tag a -> Some tag
 
@@ -126,11 +119,11 @@ instance GRead f => Read (Some f) where
         , (withTag, rest') <- greadsPrec 11 rest
         ]
 
-instance GEq tag => Eq (Some tag) where
-    Some x == Some y = defaultEq x y
+instance EqP tag => Eq (Some tag) where
+    Some x == Some y = eqp x y
 
-instance GCompare tag => Ord (Some tag) where
-    compare (Some x) (Some y) = defaultCompare x y
+instance OrdP tag => Ord (Some tag) where
+    compare (Some x) (Some y) = comparep x y
 
 instance GNFData tag => NFData (Some tag) where
     rnf (Some x) = grnf x

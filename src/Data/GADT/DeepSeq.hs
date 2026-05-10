@@ -1,30 +1,21 @@
-{-# LANGUAGE CPP                      #-}
 {-# LANGUAGE GADTs                    #-}
 {-# LANGUAGE PolyKinds                #-}
 {-# LANGUAGE Safe                     #-}
-{-# LANGUAGE TypeOperators            #-}
-#if __GLASGOW_HASKELL__ >= 810
 {-# LANGUAGE StandaloneKindSignatures #-}
-#endif
+{-# LANGUAGE TypeOperators            #-}
 module Data.GADT.DeepSeq (
     GNFData (..),
     ) where
 
 import Data.Functor.Product (Product (..))
 import Data.Functor.Sum     (Sum (..))
+import Data.Kind            (Constraint, Type)
 import Data.Type.Equality   ((:~:) (..), (:~~:) (..))
 import GHC.Generics         ((:*:) (..), (:+:) (..))
 
 import qualified Type.Reflection as TR
 
-#if __GLASGOW_HASKELL__ >= 810
-import Data.Kind (Constraint, Type)
-#endif
-
-#if __GLASGOW_HASKELL__ >= 810
 type GNFData :: (k -> Type) -> Constraint
-#endif
-
 class GNFData f where
     grnf :: f a -> ()
 
